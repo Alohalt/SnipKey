@@ -45,6 +45,7 @@ struct SettingsView: View {
     @State private var groupToDelete: UUID? = nil
     @State private var pendingSettingsAction: PendingSettingsAction? = nil
     @State private var showClipboardHistorySheet = false
+    @State private var showAboutSheet = false
     @State private var snippetSearchText: String = ""
 
     init(
@@ -100,6 +101,9 @@ struct SettingsView: View {
                 historyStore: clipboardHistoryStore,
                 onCreateSnippet: createSnippetFromClipboardRecord
             )
+        }
+        .sheet(isPresented: $showAboutSheet) {
+            AboutSheet()
         }
         .confirmationDialog(
             "替换内容尚未保存",
@@ -230,6 +234,14 @@ struct SettingsView: View {
                 showOnboardingGuide = true
             } label: {
                 Label("使用指引", systemImage: "questionmark.circle")
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .buttonStyle(.borderless)
+
+            Button {
+                showAboutSheet = true
+            } label: {
+                Label("关于 SnipKey", systemImage: "info.circle")
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
             .buttonStyle(.borderless)

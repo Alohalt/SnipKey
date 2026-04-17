@@ -6,7 +6,7 @@ enum ClipboardSnippetFactory {
         Snippet(
             trigger: SnippetTriggerSuggester.suggestTrigger(
                 for: content,
-                existingTriggers: existingSnippets.map(\ .trigger)
+                existingTriggers: existingSnippets.map(\.trigger)
             ),
             replacement: content
         )

@@ -6,6 +6,11 @@ public enum SnippetTriggerSuggester {
     private static let defaultBase = "clip"
     private static let genericHostLabels: Set<String> = ["www", "m", "mobile", "app"]
     private static let genericSecondLevelDomains: Set<String> = ["ac", "co", "com", "edu", "gov", "net", "org"]
+    private static let emailRegex = try? NSRegularExpression(
+        pattern: "^[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,}$",
+        options: [.caseInsensitive]
+    )
+    private static let linkDetector = try? NSDataDetector(types: NSTextCheckingResult.CheckingType.link.rawValue)
 
     public static func suggestTrigger(
         for content: String,
@@ -101,24 +106,21 @@ public enum SnippetTriggerSuggester {
     }
 
     private static func isLikelyEmail(_ content: String) -> Bool {
-        guard let regex = try? NSRegularExpression(
-            pattern: "^[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,}$",
-            options: [.caseInsensitive]
-        ) else {
+        guard let emailRegex else {
             return false
         }
 
         let range = NSRange(content.startIndex..., in: content)
-        return regex.firstMatch(in: content, options: [], range: range)?.range == range
+        return emailRegex.firstMatch(in: content, options: [], range: range)?.range == range
     }
 
     private static func urlCandidates(from content: String) -> [String] {
-        guard let detector = try? NSDataDetector(types: NSTextCheckingResult.CheckingType.link.rawValue) else {
+        guard let linkDetector else {
             return []
         }
 
         let fullRange = NSRange(content.startIndex..., in: content)
-        guard let match = detector.firstMatch(in: content, options: [], range: fullRange),
+        guard let match = linkDetector.firstMatch(in: content, options: [], range: fullRange),
               match.range == fullRange,
               let url = match.url,
               url.scheme?.lowercased() != "mailto",

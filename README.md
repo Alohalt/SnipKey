@@ -1,0 +1,100 @@
+# SnipKey
+
+SnipKey 是一个面向 macOS 的菜单栏文本扩展工具。用户在任意应用中输入 `#trigger`，即可通过补全面板选择或直接展开为预设文本。
+
+仓库中的 Swift Package、Target、Bundle 和数据目录已经统一为 `SnipKey`。
+
+## 当前能力
+
+- 全局监听键盘输入，在系统范围内捕获 `#` 前缀触发词。
+- 浮动补全面板跟随光标显示匹配结果，支持上下选择、`Tab` 或 `Enter` 确认、`Esc` 取消。
+- 菜单栏常驻运行，可快速打开权限引导、设置窗口和剪贴板记录。
+- 原生三栏设置界面，支持分组、搜索、创建、编辑、删除和 JSON 导入导出。
+- 支持动态变量：`{date}`、`{time}`、`{clipboard}`、`{cursor}`。
+- 记录剪贴板历史，并在内容被重复复制时建议一键生成新的 Key。
+- 使用接受次数对候选排序，常用 Key 会优先展示。
+- 首次启动自动展示设置页引导，后续可从工具区重新打开。
+
+## 项目结构
+
+```text
+.
+├── Sources/
+│   ├── SnipKeyCore/      # 可测试的核心逻辑：数据模型、匹配、变量解析、持久化
+│   └── SnipKeyApp/       # macOS 应用层：菜单栏、权限、键盘监听、设置界面、补全面板
+├── Tests/
+│   └── SnipKeyCoreTests/ # Core 层单元测试
+├── Resources/             # Info.plist、entitlements、图标资源
+├── Scripts/               # 辅助脚本
+└── docs/                  # 设计、签名流程和需求记录
+```
+
+## 环境要求
+
+- macOS 13+
+- Swift 5.9+
+- Xcode（建议，用于签名和权限稳定性）
+- 辅助功能权限
+
+## 快速开始
+
+推荐使用已签名的开发包运行，而不是直接 `swift run`。这样 macOS 会把辅助功能权限绑定到稳定的应用身份上，避免每次重新构建后权限失效。
+
+```bash
+make signing-help
+make bootstrap-personal-team
+make run
+```
+
+如果本机已经有可用的 `Apple Development` 证书，通常直接执行下面两条就够了：
+
+```bash
+make test
+make run
+```
+
+常用命令：
+
+```bash
+make build        # SwiftPM 构建
+make test         # 运行单元测试
+make run          # 安装并启动签名后的开发版应用
+make run-swift    # 直接运行 Swift 可执行文件，不推荐用于权限调试
+make verify-dev   # 检查开发包签名信息
+make package-dmg  # 生成可分发的 DMG
+```
+
+更完整的签名说明见 [docs/development-signing.md](docs/development-signing.md)。
+
+## 使用方式
+
+1. 启动应用后，从菜单栏打开“设置”。
+2. 新建一个 Key，例如触发词 `account`，替换内容填入需要插入的文本。
+3. 回到任意可输入文本的应用，输入 `#account`。
+4. 使用 `Tab`、`Enter` 或终止字符确认展开。
+
+展开时，SnipKey 会删除已输入的触发内容，再插入解析后的结果文本。
+
+## 数据存储
+
+- Key 数据：`~/Library/Application Support/SnipKey/snippets.json`
+- 剪贴板历史：`~/Library/Application Support/SnipKey/clipboard-history.json`
+
+## 测试
+
+当前仓库主要覆盖 `SnipKeyCore`：
+
+- `SnippetStoreTests`
+- `SnippetEngineTests`
+- `VariableResolverTests`
+- `ClipboardHistoryStoreTests`
+- `ModelsTests`
+
+AppKit 和系统权限相关行为目前以手工验证为主。
+
+## 相关文档
+
+- [docs/development-signing.md](docs/development-signing.md)
+- [docs/plans/2026-04-15-snipkey-mac-design.md](docs/plans/2026-04-15-snipkey-mac-design.md)
+- [docs/plans/2026-04-15-snipkey-implementation.md](docs/plans/2026-04-15-snipkey-implementation.md)
+- [docs/requirements-change-log.md](docs/requirements-change-log.md)

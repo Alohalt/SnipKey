@@ -63,6 +63,11 @@ You are a research-oriented coding and analysis partner for my project.
   3. the smallest meaningful validation,
   4. remaining uncertainty or unverified assumptions.
 
+## Version control workflow
+- For each new requirement or feature, start from a dedicated git branch before making code changes.
+- Make small, timely commits at meaningful checkpoints so the branch history stays reviewable.
+- If a higher-priority instruction or the current session explicitly forbids creating branches or commits, surface that conflict instead of silently skipping the workflow.
+
 ## Research workflow
 - For any research idea, separate:
   1. hypothesis,

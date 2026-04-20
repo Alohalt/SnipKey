@@ -23,7 +23,7 @@ struct SettingsView: View {
 
     private let headerCardHeight: CGFloat = 44
     private let replacementPreviewHeight: CGFloat = 68
-    private let onboardingExampleTrigger = "新建"
+    private let onboardingExampleTrigger = "first_key"
     private let onboardingPreviewReplacement = "这是我的第一条 Key。\n你可以把常用回复、地址、签名或模板放在这里。"
 
     @ObservedObject var store: SnippetStore
@@ -644,8 +644,8 @@ struct SettingsView: View {
             SettingsOnboardingStep(
                 target: .triggerSection,
                 title: "这里填写触发词",
-                message: "触发词只填关键词本身，不需要带 #。真正使用时，在别的应用里输入 #邮箱 这样的形式即可。",
-                footnote: "尽量设置得短一些、好记一些，避免和你平时常打的单词冲突。",
+                message: "触发词只填关键词本身，不需要带 #。真正使用时，在别的应用里输入 #email_key 这样的形式即可。",
+                footnote: "触发词只支持字母、数字和下划线，并且不能和现有 Key 重复。",
                 requiresDetailPreview: true
             ),
             SettingsOnboardingStep(
@@ -732,6 +732,28 @@ struct SettingsView: View {
     private var hasUnsavedReplacementChanges: Bool {
         guard let selectedSnippet else { return false }
         return editingReplacement != selectedSnippet.replacement
+    }
+
+    private var triggerValidationError: SnippetTriggerRules.ValidationError? {
+        guard selectedSnippetId != nil else { return nil }
+        return store.validationError(for: editingTrigger, excluding: selectedSnippetId)
+    }
+
+    private var triggerHelperText: String {
+        switch triggerValidationError {
+        case .empty:
+            return "触发词不能为空。"
+        case .invalidCharacters:
+            return "只允许字母、数字和下划线。"
+        case .duplicate:
+            return "这个触发词已经存在，请换一个。"
+        case nil:
+            return "只允许字母、数字和下划线，且必须唯一。"
+        }
+    }
+
+    private var triggerHelperColor: Color {
+        triggerValidationError == nil ? .secondary : .red
     }
 
     private var currentSidebarSelection: SidebarSelection {
@@ -926,7 +948,7 @@ struct SettingsView: View {
     }
 
     private var triggerSection: some View {
-        VStack(alignment: .leading, spacing: 2) {
+        VStack(alignment: .leading, spacing: 6) {
             Text("触发词")
                 .font(.caption2)
                 .foregroundColor(.secondary)
@@ -936,7 +958,7 @@ struct SettingsView: View {
                     .font(.system(size: 20, weight: .semibold, design: .monospaced))
                     .foregroundColor(.accentColor)
 
-                TextField("例如：邮箱", text: $editingTrigger)
+                TextField("例如：email_key", text: $editingTrigger)
                     .font(.system(size: 20, weight: .semibold, design: .monospaced))
                     .textFieldStyle(.plain)
             }
@@ -944,6 +966,10 @@ struct SettingsView: View {
             .padding(.horizontal, 9)
             .background(fieldBackground)
             .onboardingTarget(.triggerSection)
+
+            Text(triggerHelperText)
+                .font(.caption2)
+                .foregroundColor(triggerHelperColor)
         }
         .frame(maxWidth: .infinity, alignment: .topLeading)
     }
@@ -1193,8 +1219,12 @@ struct SettingsView: View {
             selectedSidebarSelection = selection
             syncSnippetSelectionToCurrentFilter()
         case .createSnippet:
-            let snippet = Snippet(trigger: "新建", replacement: "替换文本", groupId: currentSidebarSelection.groupId)
-            store.addSnippet(snippet)
+            let snippet = Snippet(
+                trigger: store.nextAvailableTrigger(),
+                replacement: "替换文本",
+                groupId: currentSidebarSelection.groupId
+            )
+            guard store.addSnippet(snippet) else { return }
             selectedSnippetId = snippet.id
             if showOnboardingGuide && currentOnboardingStep.target == .createKeyButton {
                 nextOnboardingStep()
@@ -1272,12 +1302,23 @@ struct SettingsView: View {
     }
 
     private func autoSaveTrigger(_ newTrigger: String) {
-        guard let id = selectedSnippetId,
-              var snippet = store.snippets.first(where: { $0.id == id }),
-              snippet.trigger != newTrigger else { return }
+        let sanitizedTrigger = SnippetTriggerRules.sanitize(newTrigger)
 
-        snippet.trigger = newTrigger
-        store.updateSnippet(snippet)
+        if sanitizedTrigger != newTrigger {
+            if editingTrigger != sanitizedTrigger {
+                editingTrigger = sanitizedTrigger
+            }
+            return
+        }
+
+        guard let id = selectedSnippetId,
+              let existingSnippet = store.snippets.first(where: { $0.id == id }),
+              existingSnippet.trigger != sanitizedTrigger,
+              store.validationError(for: sanitizedTrigger, excluding: id) == nil else { return }
+
+        var snippet = existingSnippet
+        snippet.trigger = sanitizedTrigger
+        _ = store.updateSnippet(snippet)
     }
 
     private func autoSaveGroup(_ newGroupId: UUID?) {
@@ -1307,10 +1348,9 @@ struct SettingsView: View {
     private func saveEditing() {
         guard let id = selectedSnippetId,
               var snippet = store.snippets.first(where: { $0.id == id }) else { return }
-        snippet.trigger = editingTrigger
         snippet.replacement = editingReplacement
         snippet.groupId = editingGroupId
-        store.updateSnippet(snippet)
+        _ = store.updateSnippet(snippet)
         syncSnippetSelectionToCurrentFilter()
     }
 

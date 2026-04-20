@@ -83,6 +83,31 @@ class AccessibilityHelper {
         return anchor?.point
     }
 
+    static func textBeforeCursor(maxLength: Int = 128) -> String? {
+        guard let focusedElement = focusedUIElement(),
+              let selectedRange = selectedTextRange(of: focusedElement) else {
+            return nil
+        }
+
+        let cursorLocation = max(0, selectedRange.location)
+        let startLocation = max(0, cursorLocation - maxLength)
+        let targetRange = CFRange(location: startLocation, length: cursorLocation - startLocation)
+
+        if let rangeText = string(for: targetRange, in: focusedElement) {
+            return rangeText
+        }
+
+        guard let value = stringAttribute(kAXValueAttribute as CFString, on: focusedElement) else {
+            return nil
+        }
+
+        let text = value as NSString
+        let boundedCursorLocation = max(0, min(selectedRange.location, text.length))
+        let fallbackStartLocation = max(0, boundedCursorLocation - maxLength)
+        let range = NSRange(location: fallbackStartLocation, length: boundedCursorLocation - fallbackStartLocation)
+        return text.substring(with: range)
+    }
+
     private static func resolvedCursorAnchor() -> CursorAnchor? {
         guard let focusedElement = focusedUIElement() else {
             return CursorAnchor(point: NSEvent.mouseLocation, source: .mouseLocation)
@@ -220,6 +245,50 @@ class AccessibilityHelper {
         var size = CGSize.zero
         guard AXValueGetValue(axValue, .cgSize, &size) else { return nil }
         return size
+    }
+
+    private static func stringAttribute(_ attribute: CFString, on element: AXUIElement) -> String? {
+        var value: CFTypeRef?
+        guard AXUIElementCopyAttributeValue(element, attribute, &value) == .success,
+              let value else {
+            return nil
+        }
+
+        if let string = value as? String {
+            return string
+        }
+
+        if let attributedString = value as? NSAttributedString {
+            return attributedString.string
+        }
+
+        return nil
+    }
+
+    private static func string(for range: CFRange, in element: AXUIElement) -> String? {
+        var mutableRange = range
+        guard let rangeValue = AXValueCreate(.cfRange, &mutableRange) else { return nil }
+
+        var value: CFTypeRef?
+        guard AXUIElementCopyParameterizedAttributeValue(
+            element,
+            kAXStringForRangeParameterizedAttribute as CFString,
+            rangeValue,
+            &value
+        ) == .success,
+        let value else {
+            return nil
+        }
+
+        if let string = value as? String {
+            return string
+        }
+
+        if let attributedString = value as? NSAttributedString {
+            return attributedString.string
+        }
+
+        return nil
     }
 
     private static func anchorPoint(for rect: CGRect, usesTrailingEdge: Bool = false) -> NSPoint {

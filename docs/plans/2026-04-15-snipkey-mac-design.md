@@ -14,6 +14,8 @@ A system-wide text expansion tool for macOS. Users define snippets with trigger 
 
 - Prefix: `#`
 - Example: typing `#account` replaces with `account1`
+- Supported trigger characters: ASCII letters, digits, and underscore (`_`)
+- Trigger uniqueness: case-insensitive; e.g. `email` and `EMAIL` are treated as conflicts
 
 ## Architecture
 
@@ -49,7 +51,7 @@ Keyboard input → CGEvent Tap intercepts
 ### Trigger Flow
 
 1. User types `#` → start capturing to buffer
-2. Buffer appends subsequent characters, real-time snippet matching
+2. Buffer appends subsequent characters, real-time snippet matching; trigger characters are limited to ASCII letters, digits, and underscore
 3. On full match (e.g., `#account` matches snippet `account`), Tab/Enter to confirm
 4. Replacement: simulate backspace keys to delete `#account` (N characters) → paste replacement via clipboard
 
@@ -65,7 +67,7 @@ Keyboard input → CGEvent Tap intercepts
 ```swift
 struct Snippet: Codable, Identifiable {
     let id: UUID
-    var trigger: String        // e.g. "account"
+    var trigger: String        // e.g. "account"; letters/digits/underscore only, unique case-insensitively
     var replacement: String    // Supports multi-line, supports dynamic variables
     var groupId: UUID?         // Group reference
 }
@@ -90,6 +92,7 @@ struct SnippetGroup: Codable, Identifiable {
 - **Path**: `~/Library/Application Support/SnipKey/snippets.json`
 - **Format**: JSON (Codable serialization)
 - **Import/Export**: Full JSON file import/export for backup and sharing
+- **Normalization**: On load/import, invalid or duplicate triggers are migrated to valid unique ASCII triggers automatically
 
 ## Permissions
 
@@ -106,7 +109,7 @@ struct SnippetGroup: Codable, Identifiable {
 ### 2. Settings Window (SwiftUI)
 - **Sidebar**: Snippet groups (folders)
 - **Main area**: Snippet list with trigger and preview
-- **Detail panel**: Edit trigger, replacement text, group assignment
+- **Detail panel**: Edit trigger, replacement text, group assignment, and inline trigger validation feedback
 - **Toolbar**: Add/Delete snippet, Import/Export buttons
 
 ### 3. Completion Popup (NSPanel)

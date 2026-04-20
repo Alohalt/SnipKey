@@ -19,13 +19,21 @@ class KeyboardMonitor {
     private var runLoopSource: CFRunLoopSource?
     private(set) var buffer: String = ""
     private var isCapturing: Bool = false
+    private var pendingCompletionResolution: DispatchWorkItem?
     private let triggerPrefix: Character = "#"
     private let currentProcessID = ProcessInfo.processInfo.processIdentifier
+    private let textContextProvider: (Int) -> String?
 
     var isRunning: Bool { eventTap != nil }
 
     var currentBufferLength: Int { buffer.count }
     var currentQuery: String { isCapturing ? String(buffer.dropFirst()) : "" }
+
+    init(textContextProvider: @escaping (Int) -> String? = { maxLength in
+        AccessibilityHelper.textBeforeCursor(maxLength: maxLength)
+    }) {
+        self.textContextProvider = textContextProvider
+    }
 
     func start() {
         guard eventTap == nil else { return }
@@ -70,6 +78,8 @@ class KeyboardMonitor {
     }
 
     func resetBuffer() {
+        pendingCompletionResolution?.cancel()
+        pendingCompletionResolution = nil
         buffer = ""
         isCapturing = false
     }
@@ -117,7 +127,7 @@ class KeyboardMonitor {
                 return Unmanaged.passUnretained(event)
             }
 
-            // Tab or Enter - confirm selection
+            // Tab or Enter confirm the highlighted completion.
             if keyCode == 48 || keyCode == 36 {
                 DispatchQueue.main.async { self.delegate?.keyboardMonitorDidConfirmSelection(self) }
                 return nil // Consume the event
@@ -146,19 +156,13 @@ class KeyboardMonitor {
                 return Unmanaged.passUnretained(event)
             }
 
-            // Space or punctuation ends capture and finalizes exact matches.
+            // Let terminators through first so committed text can land in the target app,
+            // then prefer the actual text before the cursor. Fall back to the raw buffer.
             if keyCode == 49 || isTriggerTerminator(character) {
-                let completedTrigger = String(buffer.dropFirst())
-                let deletionCount = buffer.count + 1
-                resetBuffer()
-
-                if completedTrigger.isEmpty {
-                    DispatchQueue.main.async { self.delegate?.keyboardMonitorDidCancel(self) }
-                } else {
-                    DispatchQueue.main.async {
-                        self.delegate?.keyboardMonitor(self, didCompleteTrigger: completedTrigger, deletionCount: deletionCount)
-                    }
-                }
+                scheduleCompletionResolution(
+                    fallbackTrigger: String(buffer.dropFirst()),
+                    fallbackDeletionCount: buffer.count + 1
+                )
                 return Unmanaged.passUnretained(event)
             }
 
@@ -197,7 +201,104 @@ class KeyboardMonitor {
 
     private func isTriggerTerminator(_ character: String) -> Bool {
         guard let firstCharacter = character.first else { return false }
-        return !firstCharacter.isLetter && !firstCharacter.isNumber && firstCharacter != "_" && firstCharacter != "-"
+        return SnippetTriggerRules.isAllowedCharacter(firstCharacter) == false
+    }
+
+    private func scheduleCompletionResolution(
+        fallbackTrigger: String,
+        fallbackDeletionCount: Int,
+        remainingRetries: Int = 4,
+        delay: TimeInterval = 0.04
+    ) {
+        guard isCapturing else { return }
+
+        pendingCompletionResolution?.cancel()
+
+        let contextLength = max(buffer.count + 8, 64)
+        let workItem = DispatchWorkItem { [weak self] in
+            self?.resolveCompletedTrigger(
+                withContextLength: contextLength,
+                fallbackTrigger: fallbackTrigger,
+                fallbackDeletionCount: fallbackDeletionCount,
+                remainingRetries: remainingRetries,
+                delay: delay
+            )
+        }
+        pendingCompletionResolution = workItem
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: workItem)
+    }
+
+    private func resolveCompletedTrigger(
+        withContextLength contextLength: Int,
+        fallbackTrigger: String,
+        fallbackDeletionCount: Int,
+        remainingRetries: Int,
+        delay: TimeInterval
+    ) {
+        pendingCompletionResolution = nil
+
+        guard isCapturing, let textBeforeCursor = textContextProvider(contextLength) else {
+            finishCompletionResolution(
+                trigger: fallbackTrigger,
+                deletionCount: fallbackDeletionCount,
+                remainingRetries: remainingRetries,
+                delay: delay
+            )
+            return
+        }
+
+        if let completedTrigger = TriggerContextAnalyzer.completedTrigger(
+            in: textBeforeCursor,
+            triggerPrefix: triggerPrefix
+        ) {
+            resetBuffer()
+            DispatchQueue.main.async {
+                self.delegate?.keyboardMonitor(
+                    self,
+                    didCompleteTrigger: completedTrigger.trigger,
+                    deletionCount: completedTrigger.deletionCount
+                )
+            }
+            return
+        }
+
+        finishCompletionResolution(
+            trigger: fallbackTrigger,
+            deletionCount: fallbackDeletionCount,
+            remainingRetries: remainingRetries,
+            delay: delay
+        )
+    }
+
+    private func finishCompletionResolution(
+        trigger: String,
+        deletionCount: Int,
+        remainingRetries: Int,
+        delay: TimeInterval
+    ) {
+        guard isCapturing else { return }
+
+        if remainingRetries > 0 {
+            scheduleCompletionResolution(
+                fallbackTrigger: trigger,
+                fallbackDeletionCount: deletionCount,
+                remainingRetries: remainingRetries - 1,
+                delay: delay
+            )
+            return
+        }
+
+        resetBuffer()
+
+        guard trigger.isEmpty == false else {
+            DispatchQueue.main.async { self.delegate?.keyboardMonitorDidCancel(self) }
+            return
+        }
+
+        DispatchQueue.main.async {
+            self.delegate?.keyboardMonitor(self, didCompleteTrigger: trigger, deletionCount: deletionCount)
+        }
     }
 
     private func cancelCapture(notifyDelegate: Bool) {

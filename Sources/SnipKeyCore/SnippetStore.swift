@@ -24,16 +24,32 @@ public class SnippetStore: ObservableObject {
 
     // MARK: - Snippet CRUD
 
-    public func addSnippet(_ snippet: Snippet) {
+    @discardableResult
+    public func addSnippet(_ snippet: Snippet) -> Bool {
+        guard validationError(for: snippet.trigger) == nil else {
+            print("Failed to add snippet: invalid or duplicate trigger '\(snippet.trigger)'")
+            return false
+        }
+
         snippets.append(snippet)
         save()
+        return true
     }
 
-    public func updateSnippet(_ snippet: Snippet) {
+    @discardableResult
+    public func updateSnippet(_ snippet: Snippet) -> Bool {
+        guard validationError(for: snippet.trigger, excluding: snippet.id) == nil else {
+            print("Failed to update snippet: invalid or duplicate trigger '\(snippet.trigger)'")
+            return false
+        }
+
         if let index = snippets.firstIndex(where: { $0.id == snippet.id }) {
             snippets[index] = snippet
             save()
+            return true
         }
+
+        return false
     }
 
     public func deleteSnippet(id: UUID) {
@@ -79,6 +95,17 @@ public class SnippetStore: ObservableObject {
         snippets.filter { $0.groupId == nil }
     }
 
+    public func validationError(for trigger: String, excluding snippetID: UUID? = nil) -> SnippetTriggerRules.ValidationError? {
+        let existingTriggers = snippets
+            .filter { $0.id != snippetID }
+            .map(\.trigger)
+        return SnippetTriggerRules.validationError(for: trigger, existingTriggers: existingTriggers)
+    }
+
+    public func nextAvailableTrigger(base: String = SnippetTriggerRules.defaultBase) -> String {
+        SnippetTriggerRules.nextAvailableTrigger(existingTriggers: snippets.map(\.trigger), base: base)
+    }
+
     // MARK: - Persistence
 
     public func save() {
@@ -96,8 +123,12 @@ public class SnippetStore: ObservableObject {
         do {
             let data = try Data(contentsOf: fileURL)
             let decoded = try JSONDecoder().decode(SnippetData.self, from: data)
-            snippets = decoded.snippets
+            let normalized = normalizedSnippets(decoded.snippets)
+            snippets = normalized.snippets
             groups = decoded.groups
+            if normalized.didChange {
+                save()
+            }
         } catch {
             print("Failed to load snippets: \(error)")
         }
@@ -114,8 +145,31 @@ public class SnippetStore: ObservableObject {
     public func importData(from url: URL) throws {
         let data = try Data(contentsOf: url)
         let decoded = try JSONDecoder().decode(SnippetData.self, from: data)
-        snippets = decoded.snippets
+        snippets = normalizedSnippets(decoded.snippets).snippets
         groups = decoded.groups
         save()
+    }
+
+    private func normalizedSnippets(_ rawSnippets: [Snippet]) -> (snippets: [Snippet], didChange: Bool) {
+        var normalizedTriggers: [String] = []
+        var normalizedSnippets: [Snippet] = []
+        var didChange = false
+
+        for var snippet in rawSnippets {
+            let normalizedTrigger = SnippetTriggerRules.normalizedTrigger(
+                from: snippet.trigger,
+                existingTriggers: normalizedTriggers
+            )
+
+            if snippet.trigger != normalizedTrigger {
+                snippet.trigger = normalizedTrigger
+                didChange = true
+            }
+
+            normalizedTriggers.append(snippet.trigger)
+            normalizedSnippets.append(snippet)
+        }
+
+        return (normalizedSnippets, didChange)
     }
 }

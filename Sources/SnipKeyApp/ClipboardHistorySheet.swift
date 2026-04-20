@@ -240,7 +240,7 @@ struct ClipboardHistorySheet: View {
 
     private var headerSubtitle: String {
         if historyStore.settings.isMonitoringEnabled {
-            return "按最近复制时间排序，达到设定次数后会提示创建 Key。"
+            return "按最近复制时间排序，最多保留最近 \(ClipboardHistoryStore.defaultMaxRecordCount) 条记录，达到设定次数后会提示创建 Key。"
         }
 
         return "当前已暂停记录剪贴板文本。"
@@ -251,7 +251,7 @@ struct ClipboardHistorySheet: View {
             return "还没有可用的复制记录。"
         }
 
-        return "共 \(historyStore.records.count) 条记录，最近复制的内容会排在最前面。"
+        return "共 \(historyStore.records.count) 条记录，最近复制的内容会排在最前面，超出后会自动滚动清理旧记录。"
     }
 
     private var statusDivider: some View {

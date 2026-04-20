@@ -35,6 +35,96 @@ final class ClipboardHistoryStoreTests: XCTestCase {
         XCTAssertEqual(store.records.first?.lastCopiedAt, currentDate)
     }
 
+    func testRecordCopyKeepsOnlyMostRecentRecordsUpToMaxCount() {
+        let limitedStore = ClipboardHistoryStore(fileURL: tempURL, maxRecordCount: 3, now: { [unowned self] in
+            currentDate
+        })
+
+        _ = limitedStore.recordCopy("one")
+        currentDate = currentDate.addingTimeInterval(1)
+        _ = limitedStore.recordCopy("two")
+        currentDate = currentDate.addingTimeInterval(1)
+        _ = limitedStore.recordCopy("three")
+        currentDate = currentDate.addingTimeInterval(1)
+        _ = limitedStore.recordCopy("four")
+
+        XCTAssertEqual(limitedStore.records.map(\.content), ["four", "three", "two"])
+    }
+
+    func testEvictedRecordKeepsSuggestionCountForFutureCopies() {
+        let limitedStore = ClipboardHistoryStore(fileURL: tempURL, maxRecordCount: 2, now: { [unowned self] in
+            currentDate
+        })
+
+        _ = limitedStore.recordCopy("hello")
+        currentDate = currentDate.addingTimeInterval(1)
+        _ = limitedStore.recordCopy("hello")
+        currentDate = currentDate.addingTimeInterval(1)
+        _ = limitedStore.recordCopy("two")
+        currentDate = currentDate.addingTimeInterval(1)
+        _ = limitedStore.recordCopy("three")
+
+        XCTAssertFalse(limitedStore.records.contains { $0.content == "hello" })
+
+        currentDate = currentDate.addingTimeInterval(1)
+        let record = limitedStore.recordCopy("hello")
+
+        XCTAssertEqual(record?.copyCount, 3)
+        XCTAssertEqual(limitedStore.records.map(\.content), ["hello", "three"])
+        XCTAssertTrue(limitedStore.shouldSuggestKey(for: record!))
+    }
+
+    func testDeleteRecordKeepsSuggestionCountForFutureCopiesAfterReload() {
+        currentDate = currentDate.addingTimeInterval(1)
+        let record = store.recordCopy("hello")
+        currentDate = currentDate.addingTimeInterval(1)
+        _ = store.recordCopy("hello")
+
+        store.deleteRecord(id: record!.id)
+
+        let reloadedStore = ClipboardHistoryStore(fileURL: tempURL, now: { [unowned self] in
+            currentDate
+        })
+        currentDate = currentDate.addingTimeInterval(1)
+        let reloadedRecord = reloadedStore.recordCopy("hello")
+
+        XCTAssertEqual(reloadedStore.records.count, 1)
+        XCTAssertEqual(reloadedRecord?.copyCount, 3)
+    }
+
+    func testClearHistoryResetsSuggestionCount() {
+        _ = store.recordCopy("hello")
+        currentDate = currentDate.addingTimeInterval(1)
+        _ = store.recordCopy("hello")
+
+        store.clearHistory()
+
+        currentDate = currentDate.addingTimeInterval(1)
+        let record = store.recordCopy("hello")
+
+        XCTAssertEqual(record?.copyCount, 1)
+    }
+
+    func testLoadTrimsOversizedHistoryAndCompactsPersistedFile() throws {
+        let records = (0..<5).map { offset in
+            ClipboardRecord(
+                content: "item-\(offset)",
+                lastCopiedAt: currentDate.addingTimeInterval(TimeInterval(offset))
+            )
+        }
+        let data = ClipboardHistoryData(records: records, settings: ClipboardSettings())
+        let encoded = try JSONEncoder().encode(data)
+        try encoded.write(to: tempURL, options: .atomic)
+
+        let limitedStore = ClipboardHistoryStore(fileURL: tempURL, maxRecordCount: 3, now: { [unowned self] in
+            currentDate
+        })
+        let persisted = try JSONDecoder().decode(ClipboardHistoryData.self, from: Data(contentsOf: tempURL))
+
+        XCTAssertEqual(limitedStore.records.map(\.content), ["item-4", "item-3", "item-2"])
+        XCTAssertEqual(persisted.records.map(\.content), ["item-4", "item-3", "item-2"])
+    }
+
     func testShouldSuggestAtThresholdAndAgainAfterAnotherThresholdWindow() {
         var record = store.recordCopy("hello")
         XCTAssertFalse(store.shouldSuggestKey(for: record!))
@@ -118,7 +208,7 @@ final class ClipboardHistoryStoreTests: XCTestCase {
         XCTAssertEqual(reloadedStore.settings, ClipboardSettings(isMonitoringEnabled: false, suggestionThreshold: 5))
     }
 
-        func testRecordDecodesLegacyFirstCopiedAtIntoLastCopiedAt() throws {
+    func testRecordDecodesLegacyFirstCopiedAtIntoLastCopiedAt() throws {
         let id = UUID()
         let json = """
         {

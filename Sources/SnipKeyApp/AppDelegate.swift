@@ -10,7 +10,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private let keyboardMonitor = KeyboardMonitor()
     private lazy var clipboardMonitor = ClipboardMonitor(historyStore: clipboardHistoryStore)
     private let textReplacer = TextReplacer()
-    private let completionPanel = CompletionPanel()
+    private lazy var completionPanel: CompletionPanel = {
+        let panel = CompletionPanel()
+        panel.onConfirmSelection = { [weak self] snippet in
+            self?.confirmCompletionSelection(snippet)
+        }
+        return panel
+    }()
     private let menuBarController = MenuBarController()
     private lazy var settingsWindow = SettingsWindow(store: store, clipboardHistoryStore: clipboardHistoryStore)
     private var cancellables = Set<AnyCancellable>()
@@ -18,6 +24,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var accessibilityCheckTimer: Timer?
     private var lastKnownCursorPosition: NSPoint?
     private var isPresentingClipboardSuggestion = false
+    private var globalMouseMonitor: Any?
+    private var localMouseMonitor: Any?
 
     @objc func openSettingsFromAppMenu(_ sender: Any?) {
         settingsWindow.show()
@@ -47,6 +55,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // Setup keyboard monitor
         keyboardMonitor.delegate = self
         startKeyboardMonitorWithAccessibilityCheck()
+        startOutsidePanelClickMonitoring()
 
         clipboardMonitor.delegate = self
         clipboardMonitor.start()
@@ -114,6 +123,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationWillTerminate(_ notification: Notification) {
         accessibilityCheckTimer?.invalidate()
+        stopOutsidePanelClickMonitoring()
         keyboardMonitor.stop()
         clipboardMonitor.stop()
     }
@@ -155,6 +165,7 @@ extension AppDelegate: KeyboardMonitorDelegate {
         guard buffer == monitor.currentQuery else { return }
 
         let matches = engine.match(query: buffer)
+
         if let cursorPosition = AccessibilityHelper.getCursorScreenPosition() {
             lastKnownCursorPosition = cursorPosition
         }
@@ -163,8 +174,7 @@ extension AppDelegate: KeyboardMonitorDelegate {
 
     func keyboardMonitor(_ monitor: KeyboardMonitor, didCompleteTrigger trigger: String, deletionCount: Int) {
         print("[SnipKey] didCompleteTrigger: '\(trigger)'")
-        completionPanel.hide()
-        lastKnownCursorPosition = nil
+        hideCompletionPanel()
 
         guard let snippet = engine.findExact(trigger: trigger) else {
             print("[SnipKey]   No exact match found for '\(trigger)'")
@@ -179,8 +189,7 @@ extension AppDelegate: KeyboardMonitorDelegate {
 
     func keyboardMonitorDidCancel(_ monitor: KeyboardMonitor) {
         print("[SnipKey] didCancel")
-        completionPanel.hide()
-        lastKnownCursorPosition = nil
+        finishCompletionInteractionCleanup()
     }
 
     func keyboardMonitor(_ monitor: KeyboardMonitor, didRequestSelection direction: KeyboardMonitor.SelectionDirection) {
@@ -192,11 +201,7 @@ extension AppDelegate: KeyboardMonitorDelegate {
 
     func keyboardMonitorDidConfirmSelection(_ monitor: KeyboardMonitor) {
         guard let snippet = completionPanel.selectedSnippet else { return }
-        completionPanel.hide()
-        lastKnownCursorPosition = nil
-        store.recordAcceptance(for: snippet.id)
-        textReplacer.replace(deleteCount: monitor.currentBufferLength, replacement: snippet.replacement)
-        monitor.resetBuffer()
+        confirmCompletionSelection(snippet)
     }
 }
 
@@ -212,8 +217,7 @@ extension AppDelegate: MenuBarControllerDelegate {
             accessibilityCheckTimer = nil
             keyboardMonitor.stop()
             clipboardMonitor.stop()
-            completionPanel.hide()
-            lastKnownCursorPosition = nil
+            finishCompletionInteractionCleanup()
         }
     }
 
@@ -271,5 +275,67 @@ private extension AppDelegate {
             .trimmingCharacters(in: .whitespacesAndNewlines)
         let preview = String(flattened.prefix(120))
         return flattened.count > preview.count ? preview + "…" : preview
+    }
+
+    func confirmCompletionSelection(_ snippet: Snippet) {
+        hideCompletionPanel()
+        store.recordAcceptance(for: snippet.id)
+        textReplacer.replace(deleteCount: keyboardMonitor.currentBufferLength, replacement: snippet.replacement)
+        keyboardMonitor.resetBuffer()
+    }
+
+    func startOutsidePanelClickMonitoring() {
+        let eventMask: NSEvent.EventTypeMask = [.leftMouseDown, .rightMouseDown, .otherMouseDown]
+
+        if globalMouseMonitor == nil {
+            globalMouseMonitor = NSEvent.addGlobalMonitorForEvents(matching: eventMask) { [weak self] _ in
+                self?.handleMonitoredMouseDown(at: NSEvent.mouseLocation)
+            }
+        }
+
+        if localMouseMonitor == nil {
+            localMouseMonitor = NSEvent.addLocalMonitorForEvents(matching: eventMask) { [weak self] event in
+                self?.handleMonitoredMouseDown(at: self?.screenLocation(for: event) ?? NSEvent.mouseLocation)
+                return event
+            }
+        }
+    }
+
+    func stopOutsidePanelClickMonitoring() {
+        if let globalMouseMonitor {
+            NSEvent.removeMonitor(globalMouseMonitor)
+            self.globalMouseMonitor = nil
+        }
+
+        if let localMouseMonitor {
+            NSEvent.removeMonitor(localMouseMonitor)
+            self.localMouseMonitor = nil
+        }
+    }
+
+    func handleMonitoredMouseDown(at screenPoint: NSPoint) {
+        guard completionPanel.isVisible else { return }
+
+        if completionPanel.containsScreenPoint(screenPoint) {
+            return
+        }
+
+        print("[SnipKey] Completion cancelled after an outside click.")
+        keyboardMonitor.resetBuffer()
+        finishCompletionInteractionCleanup()
+    }
+
+    func screenLocation(for event: NSEvent) -> NSPoint {
+        guard let window = event.window else { return NSEvent.mouseLocation }
+        return window.convertPoint(toScreen: event.locationInWindow)
+    }
+
+    func hideCompletionPanel() {
+        completionPanel.hide()
+        lastKnownCursorPosition = nil
+    }
+
+    func finishCompletionInteractionCleanup() {
+        hideCompletionPanel()
     }
 }

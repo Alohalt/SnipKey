@@ -2,13 +2,6 @@ import Cocoa
 import ApplicationServices
 
 class AccessibilityHelper {
-    struct FocusedTextTarget {
-        let application: NSRunningApplication
-        let element: AXUIElement
-        let selectedRange: CFRange?
-        let cursorScreenPosition: NSPoint?
-    }
-
     private static let promptIdentityKey = "SnipKey.keyboardAccessPrompt.identity"
     private static let promptDateKey = "SnipKey.keyboardAccessPrompt.date"
     private static let promptCooldown: TimeInterval = 12 * 60 * 60
@@ -115,51 +108,6 @@ class AccessibilityHelper {
         return text.substring(with: range)
     }
 
-    static func captureFocusedTextTarget() -> FocusedTextTarget? {
-        guard let focusedApp = NSWorkspace.shared.frontmostApplication,
-              let focusedElement = focusedUIElement(for: focusedApp) else {
-            return nil
-        }
-
-        return FocusedTextTarget(
-            application: focusedApp,
-            element: focusedElement,
-            selectedRange: selectedTextRange(of: focusedElement),
-            cursorScreenPosition: getCursorScreenPosition()
-        )
-    }
-
-    static func restoreFocus(
-        to target: FocusedTextTarget,
-        completion: @escaping (Bool) -> Void
-    ) {
-        guard target.application.isTerminated == false else {
-            completion(false)
-            return
-        }
-
-        _ = target.application.activate(options: [.activateIgnoringOtherApps])
-
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-            // AX write-back: works for apps that support it (e.g. Notes, TextEdit)
-            _ = setFocusedAttribute(on: target.element)
-            _ = restoreSelectedTextRange(target.selectedRange, on: target.element)
-
-            // Simulated mouse click: universally compatible with third-party apps
-            // (Electron, WKWebView, QQ, WeChat, browsers, etc.)
-            if let cursorPosition = target.cursorScreenPosition {
-                simulateClick(at: cursorPosition)
-            }
-
-            // Allow the click and focus events to settle before caller sends key events
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) {
-                let success = NSWorkspace.shared.frontmostApplication?.processIdentifier
-                    == target.application.processIdentifier
-                completion(success)
-            }
-        }
-    }
-
     private static func resolvedCursorAnchor() -> CursorAnchor? {
         guard let focusedElement = focusedUIElement() else {
             return CursorAnchor(point: NSEvent.mouseLocation, source: .mouseLocation)
@@ -190,11 +138,7 @@ class AccessibilityHelper {
 
     private static func focusedUIElement() -> AXUIElement? {
         guard let focusedApp = NSWorkspace.shared.frontmostApplication else { return nil }
-        return focusedUIElement(for: focusedApp)
-    }
-
-    private static func focusedUIElement(for application: NSRunningApplication) -> AXUIElement? {
-        let appElement = AXUIElementCreateApplication(application.processIdentifier)
+        let appElement = AXUIElementCreateApplication(focusedApp.processIdentifier)
 
         var focusedElement: CFTypeRef?
         guard AXUIElementCopyAttributeValue(appElement, kAXFocusedUIElementAttribute as CFString, &focusedElement) == .success,
@@ -203,31 +147,6 @@ class AccessibilityHelper {
         }
 
         return (focusedElement as! AXUIElement)
-    }
-
-    private static func simulateClick(at nsPoint: NSPoint) {
-        // Convert Cocoa screen coordinates (y-up, origin bottom-left)
-        // to CGEvent coordinates (y-down, origin top-left of primary screen)
-        let primaryScreenHeight = NSScreen.screens.first?.frame.height ?? 0
-        let cgPoint = CGPoint(x: nsPoint.x, y: primaryScreenHeight - nsPoint.y)
-        let mouseDown = CGEvent(mouseEventSource: nil, mouseType: .leftMouseDown,
-                                mouseCursorPosition: cgPoint, mouseButton: .left)
-        let mouseUp = CGEvent(mouseEventSource: nil, mouseType: .leftMouseUp,
-                              mouseCursorPosition: cgPoint, mouseButton: .left)
-        mouseDown?.post(tap: .cgAnnotatedSessionEventTap)
-        mouseUp?.post(tap: .cgAnnotatedSessionEventTap)
-    }
-
-    private static func setFocusedAttribute(on element: AXUIElement) -> Bool {
-        AXUIElementSetAttributeValue(element, kAXFocusedAttribute as CFString, kCFBooleanTrue) == .success
-    }
-
-    private static func restoreSelectedTextRange(_ selectedRange: CFRange?, on element: AXUIElement) -> Bool {
-        guard let selectedRange else { return true }
-
-        var mutableRange = selectedRange
-        guard let rangeValue = AXValueCreate(.cfRange, &mutableRange) else { return false }
-        return AXUIElementSetAttributeValue(element, kAXSelectedTextRangeAttribute as CFString, rangeValue) == .success
     }
 
     private static func selectedTextRange(of element: AXUIElement) -> CFRange? {

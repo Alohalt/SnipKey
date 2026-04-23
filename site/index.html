@@ -8,44 +8,20 @@
     name="description"
     content="SnipKey 是一个面向 macOS 的菜单栏文本扩展工具：在任意应用中输入 #trigger，即可通过补全面板快速展开预设文本。"
   />
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230a84ff'/%3E%3Ctext x='32' y='44' font-family='-apple-system,Helvetica,Arial' font-size='34' font-weight='700' fill='white' text-anchor='middle'%3E%23%3C/text%3E%3C/svg%3E" />
+  <meta name="theme-color" content="#f7f9fc" />
+  <link rel="icon" type="image/png" href="./app-icon.png" />
   <style>
     :root {
-      --bg: #09111f;
-      --bg-soft: rgba(14, 23, 40, 0.82);
-      --surface: rgba(12, 20, 35, 0.72);
-      --surface-strong: #0f1a2f;
-      --card: rgba(18, 28, 48, 0.88);
-      --border: rgba(140, 168, 216, 0.18);
-      --text: #eef3fb;
-      --text-muted: #a6b4cd;
-      --accent: #57a8ff;
-      --accent-strong: #0a84ff;
-      --accent-soft: rgba(87, 168, 255, 0.14);
-      --success: #71e3bb;
-      --warning: #ffd166;
-      --shadow: 0 24px 80px rgba(2, 8, 20, 0.32);
-      --code-bg: rgba(9, 16, 29, 0.95);
-    }
-
-    @media (prefers-color-scheme: light) {
-      :root {
-        --bg: #f3f7fc;
-        --bg-soft: rgba(255, 255, 255, 0.9);
-        --surface: rgba(255, 255, 255, 0.86);
-        --surface-strong: #ffffff;
-        --card: rgba(255, 255, 255, 0.96);
-        --border: rgba(98, 128, 182, 0.18);
-        --text: #132033;
-        --text-muted: #60708a;
-        --accent: #0a84ff;
-        --accent-strong: #0a6fe0;
-        --accent-soft: rgba(10, 132, 255, 0.09);
-        --success: #0f9968;
-        --warning: #b57900;
-        --shadow: 0 24px 70px rgba(45, 67, 103, 0.12);
-        --code-bg: #eef4fb;
-      }
+      --bg: #f7f9fc;
+      --surface: #ffffff;
+      --surface-soft: #f2f5f9;
+      --border: #e3e9f1;
+      --text: #1b2430;
+      --text-muted: #5d6b80;
+      --accent: #2f6feb;
+      --accent-soft: #e9f1ff;
+      --shadow: 0 12px 32px rgba(15, 23, 42, 0.06);
+      --code-bg: #f4f7fb;
     }
 
     * { box-sizing: border-box; }
@@ -58,10 +34,7 @@
       margin: 0;
       min-width: 320px;
       color: var(--text);
-      background:
-        radial-gradient(circle at top left, rgba(87, 168, 255, 0.22), transparent 28%),
-        radial-gradient(circle at top right, rgba(113, 227, 187, 0.12), transparent 24%),
-        linear-gradient(180deg, var(--bg) 0%, #0b1425 100%);
+      background: var(--bg);
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
         "Hiragino Sans GB", "Microsoft YaHei", Helvetica, Arial, sans-serif;
       line-height: 1.65;
@@ -73,116 +46,48 @@
       text-decoration: none;
     }
 
-    a:hover {
-      text-decoration: none;
+    img {
+      display: block;
+      max-width: 100%;
     }
 
-    .container {
-      width: min(1120px, calc(100% - 40px));
-      margin: 0 auto;
-    }
-
-    .section {
-      padding: 88px 0;
-    }
-
-    .section-header {
-      max-width: 720px;
-      margin-bottom: 32px;
-    }
-
-    .eyebrow {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 6px 12px;
-      border-radius: 999px;
-      border: 1px solid var(--border);
-      background: var(--accent-soft);
-      color: var(--accent);
-      font-size: 13px;
-      font-weight: 600;
-      letter-spacing: 0.01em;
-    }
-
-    .eyebrow::before {
-      content: "";
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: currentColor;
-      box-shadow: 0 0 0 6px rgba(87, 168, 255, 0.14);
-    }
-
-    h1, h2, h3, h4, p {
+    h1, h2, h3, p, ul {
       margin: 0;
     }
 
-    h1 {
-      font-size: clamp(42px, 7vw, 72px);
-      line-height: 1.04;
-      letter-spacing: -0.04em;
+    code.inline,
+    pre,
+    code {
+      font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
     }
 
-    h2 {
-      font-size: clamp(28px, 4vw, 40px);
-      line-height: 1.14;
-      letter-spacing: -0.03em;
-      margin-top: 18px;
-      margin-bottom: 12px;
+    code.inline {
+      padding: 2px 8px;
+      border-radius: 8px;
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      font-size: 0.92em;
     }
 
-    .section-header p,
-    .hero-copy p,
-    .card p,
-    .step p,
-    .storage-card p,
-    .link-card p,
-    .terminal-note,
-    .mini-list li {
-      color: var(--text-muted);
-    }
-
-    .terminal-note {
-      margin-top: 16px;
-    }
-
-    .shell {
-      position: relative;
-      overflow: hidden;
-    }
-
-    .shell::before {
-      content: "";
-      position: absolute;
-      inset: 0;
-      background:
-        linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent 16%),
-        radial-gradient(circle at top, rgba(87, 168, 255, 0.14), transparent 30%);
-      pointer-events: none;
+    .container {
+      width: min(1160px, calc(100% - 40px));
+      margin: 0 auto;
     }
 
     .topbar {
       position: sticky;
       top: 0;
       z-index: 20;
-      backdrop-filter: blur(18px);
-      background: rgba(7, 12, 22, 0.72);
-      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-    }
-
-    @media (prefers-color-scheme: light) {
-      .topbar {
-        background: rgba(243, 247, 252, 0.82);
-        border-bottom-color: rgba(98, 128, 182, 0.12);
-      }
+      background: rgba(247, 249, 252, 0.92);
+      backdrop-filter: blur(14px);
+      border-bottom: 1px solid rgba(227, 233, 241, 0.92);
     }
 
     .topbar-inner {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 24px;
+      gap: 20px;
       min-height: 72px;
     }
 
@@ -194,23 +99,18 @@
       letter-spacing: -0.02em;
     }
 
-    .brand-mark {
-      display: inline-grid;
-      place-items: center;
-      width: 38px;
-      height: 38px;
-      border-radius: 12px;
-      background: linear-gradient(135deg, var(--accent-strong), #6cb6ff);
-      color: #fff;
-      box-shadow: 0 16px 30px rgba(10, 132, 255, 0.24);
-      font-size: 21px;
+    .brand-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      box-shadow: 0 6px 18px rgba(47, 111, 235, 0.16);
     }
 
     .topnav {
       display: flex;
+      align-items: center;
       gap: 18px;
       flex-wrap: wrap;
-      align-items: center;
       justify-content: flex-end;
     }
 
@@ -222,52 +122,90 @@
 
     .topnav a:hover,
     .topnav a:focus-visible {
-      color: var(--text);
+      color: var(--accent);
     }
 
     .hero {
-      padding: 56px 0 44px;
+      padding: 56px 0 40px;
     }
 
     .hero-grid {
       display: grid;
-      grid-template-columns: minmax(0, 1.15fr) minmax(320px, 0.85fr);
+      grid-template-columns: minmax(0, 1.1fr) minmax(320px, 0.9fr);
       gap: 28px;
-      align-items: center;
+      align-items: stretch;
+    }
+
+    .hero-copy,
+    .hero-panel,
+    .section-card,
+    .page-nav {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
     }
 
     .hero-copy {
+      padding: 40px;
+      border-radius: 28px;
       display: flex;
       flex-direction: column;
       gap: 20px;
     }
 
-    .hero-copy p {
-      max-width: 700px;
-      font-size: 18px;
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      width: fit-content;
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-size: 13px;
+      font-weight: 600;
     }
 
-    .hero-summary {
+    .eyebrow::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+
+    h1 {
+      font-size: clamp(40px, 7vw, 64px);
+      line-height: 1.06;
+      letter-spacing: -0.04em;
+    }
+
+    .hero-copy p {
+      max-width: 720px;
+      font-size: 18px;
+      color: var(--text-muted);
+    }
+
+    .hero-meta {
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 12px;
     }
 
-    .summary-item {
+    .meta-item {
       padding: 16px 18px;
       border-radius: 18px;
+      background: var(--surface-soft);
       border: 1px solid var(--border);
-      background: var(--bg-soft);
-      box-shadow: var(--shadow);
     }
 
-    .summary-item strong {
+    .meta-item strong {
       display: block;
-      font-size: 18px;
       margin-bottom: 4px;
+      font-size: 16px;
     }
 
-    .summary-item span {
+    .meta-item span {
       color: var(--text-muted);
       font-size: 13px;
     }
@@ -276,109 +214,106 @@
       display: flex;
       gap: 12px;
       flex-wrap: wrap;
-      margin-top: 8px;
+      margin-top: 4px;
     }
 
     .btn {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 8px;
-      min-height: 48px;
+      min-height: 46px;
       padding: 0 18px;
       border-radius: 14px;
       border: 1px solid var(--border);
       background: var(--surface);
       color: var(--text);
       font-weight: 600;
-      transition: transform 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+      transition: border-color 0.2s ease, transform 0.2s ease;
     }
 
     .btn:hover,
     .btn:focus-visible {
       transform: translateY(-1px);
-      border-color: rgba(87, 168, 255, 0.32);
-      background: rgba(87, 168, 255, 0.11);
+      border-color: #c9d6eb;
     }
 
     .btn-primary {
-      background: linear-gradient(135deg, var(--accent-strong), #57a8ff);
-      border-color: transparent;
+      background: var(--accent);
+      border-color: var(--accent);
       color: #fff;
-      box-shadow: 0 18px 34px rgba(10, 132, 255, 0.26);
     }
 
     .hero-panel {
-      position: relative;
       border-radius: 28px;
-      border: 1px solid var(--border);
-      background: linear-gradient(180deg, rgba(17, 27, 46, 0.95), rgba(11, 18, 32, 0.92));
-      box-shadow: var(--shadow);
-      padding: 22px;
-      overflow: hidden;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
     }
 
-    .hero-panel::after {
-      content: "";
-      position: absolute;
-      inset: auto -80px -110px auto;
-      width: 220px;
-      height: 220px;
-      border-radius: 50%;
-      background: rgba(87, 168, 255, 0.14);
-      filter: blur(20px);
-    }
-
-    .panel-label {
-      display: inline-flex;
-      gap: 8px;
+    .panel-head {
+      display: flex;
       align-items: center;
-      padding: 6px 12px;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .panel-title {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .panel-title img {
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+    }
+
+    .panel-title span {
+      display: block;
+      color: var(--text-muted);
+      font-size: 13px;
+    }
+
+    .panel-badge {
+      padding: 6px 10px;
       border-radius: 999px;
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      background: rgba(255, 255, 255, 0.04);
-      color: #dfe8f8;
+      background: var(--surface-soft);
+      color: var(--text-muted);
       font-size: 12px;
       font-weight: 600;
-      margin-bottom: 16px;
-    }
-
-    .demo-caption {
-      margin-bottom: 14px;
-    }
-
-    .demo-card,
-    .mini-card,
-    .card,
-    .step,
-    .storage-card,
-    .link-card {
-      border: 1px solid var(--border);
-      background: var(--card);
-      box-shadow: var(--shadow);
     }
 
     .demo-card {
-      position: relative;
+      border: 1px solid var(--border);
       border-radius: 22px;
       padding: 18px;
-      z-index: 1;
+      background: var(--surface-soft);
+    }
+
+    .input-line,
+    .suggestion-item,
+    .mini-item {
+      border-radius: 16px;
+      border: 1px solid var(--border);
+      background: var(--surface);
     }
 
     .input-line {
       margin-bottom: 14px;
       padding: 14px 16px;
-      border-radius: 16px;
-      background: rgba(255, 255, 255, 0.04);
-      border: 1px solid rgba(255, 255, 255, 0.06);
-      font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
-      color: #eff5ff;
       font-size: 14px;
     }
 
-    .suggestion-list {
+    .suggestion-list,
+    .mini-list,
+    .link-list,
+    .path-list,
+    .steps-list,
+    .quickstart-list {
       display: grid;
-      gap: 10px;
+      gap: 12px;
     }
 
     .suggestion-item {
@@ -387,106 +322,165 @@
       gap: 12px;
       align-items: start;
       padding: 14px 16px;
-      border-radius: 16px;
-      background: rgba(7, 15, 27, 0.58);
-      border: 1px solid rgba(255, 255, 255, 0.06);
-    }
-
-    .suggestion-item strong {
-      color: #ffffff;
-      font-size: 14px;
-    }
-
-    .suggestion-item p {
-      color: #b9c7de;
-      font-size: 13px;
-      margin-top: 2px;
     }
 
     .suggestion-item.active {
-      border-color: rgba(87, 168, 255, 0.38);
-      background: rgba(87, 168, 255, 0.12);
+      border-color: #bfd2fb;
+      background: #f4f8ff;
+    }
+
+    .suggestion-item strong {
+      display: block;
+      font-size: 14px;
+      margin-bottom: 2px;
+    }
+
+    .suggestion-item p,
+    .mini-item p,
+    .section-copy,
+    .link-row p,
+    .path-row p,
+    .steps-list p,
+    .quickstart-list li,
+    .section-card li {
+      color: var(--text-muted);
+      font-size: 14px;
     }
 
     .token {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      min-width: 64px;
+      min-width: 66px;
       min-height: 28px;
       padding: 0 10px;
       border-radius: 999px;
-      background: rgba(255, 255, 255, 0.06);
-      color: #dce7fa;
+      background: var(--surface-soft);
+      color: var(--text);
       font-size: 12px;
-      font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+      border: 1px solid var(--border);
     }
 
-    .token-success {
-      color: var(--success);
-      background: rgba(113, 227, 187, 0.12);
-    }
-
-    .mini-grid,
-    .capability-grid,
-    .steps-grid,
-    .storage-grid,
-    .links-grid,
-    .quickstart-grid {
-      display: grid;
-      gap: 18px;
-    }
-
-    .mini-grid {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      margin-top: 18px;
-    }
-
-    .mini-card,
-    .card,
-    .storage-card,
-    .link-card {
-      border-radius: 22px;
-      padding: 22px;
-    }
-
-    .mini-card h3,
-    .card h3,
-    .storage-card h3,
-    .link-card h3,
-    .step h3 {
-      font-size: 18px;
-      margin-bottom: 8px;
-      letter-spacing: -0.02em;
-    }
-
-    .mini-card p,
-    .card p,
-    .storage-card p,
-    .link-card p,
-    .step p {
-      font-size: 14px;
+    .token-accent {
+      color: var(--accent);
+      background: var(--accent-soft);
+      border-color: transparent;
     }
 
     .mini-list {
-      padding-left: 18px;
-      margin: 12px 0 0;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
-    .mini-list li + li {
-      margin-top: 8px;
+    .mini-item {
+      padding: 16px;
     }
 
-    .capability-grid {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+    .page-layout {
+      padding: 0 0 64px;
     }
 
-    .card .tag-row,
-    .quick-tags {
+    .page-grid {
+      display: grid;
+      grid-template-columns: 220px minmax(0, 1fr);
+      gap: 20px;
+      align-items: start;
+    }
+
+    .page-nav {
+      position: sticky;
+      top: 92px;
+      border-radius: 22px;
+      padding: 18px;
+    }
+
+    .page-nav strong,
+    .section-card h2,
+    .section-card h3 {
+      letter-spacing: -0.02em;
+    }
+
+    .page-nav strong {
+      display: block;
+      margin-bottom: 12px;
+      font-size: 14px;
+    }
+
+    .page-nav a {
+      display: block;
+      padding: 9px 10px;
+      border-radius: 12px;
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+
+    .page-nav a:hover,
+    .page-nav a:focus-visible {
+      background: var(--surface-soft);
+      color: var(--accent);
+    }
+
+    .content-stack {
+      display: grid;
+      gap: 20px;
+    }
+
+    .section-card {
+      border-radius: 28px;
+      padding: 32px;
+    }
+
+    .section-head {
+      margin-bottom: 22px;
+    }
+
+    .section-head h2 {
+      font-size: clamp(28px, 4vw, 38px);
+      margin: 10px 0 8px;
+    }
+
+    .section-copy {
+      max-width: 760px;
+    }
+
+    .feature-grid,
+    .path-grid,
+    .links-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .feature-item,
+    .path-row,
+    .link-row,
+    .quickstart-card,
+    .terminal {
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      background: var(--surface-soft);
+    }
+
+    .feature-item,
+    .path-row,
+    .link-row,
+    .quickstart-card {
+      padding: 20px;
+    }
+
+    .feature-item h3,
+    .path-row h3,
+    .link-row h3,
+    .quickstart-card h3,
+    .steps-list strong {
+      font-size: 17px;
+      margin-bottom: 8px;
+    }
+
+    .tag-row {
       display: flex;
       flex-wrap: wrap;
       gap: 8px;
-      margin-top: 16px;
+      margin-top: 14px;
     }
 
     .tag {
@@ -495,23 +489,59 @@
       min-height: 28px;
       padding: 0 10px;
       border-radius: 999px;
-      background: var(--accent-soft);
-      color: var(--accent);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
       font-size: 12px;
       font-weight: 600;
     }
 
+    .steps-list {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .steps-list li,
+    .quickstart-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .steps-list li {
+      padding: 20px;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      background: var(--surface-soft);
+    }
+
+    .step-index {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      margin-bottom: 12px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: #fff;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
     .quickstart-grid {
-      grid-template-columns: minmax(0, 0.95fr) minmax(300px, 0.75fr);
+      display: grid;
+      grid-template-columns: minmax(0, 0.9fr) minmax(300px, 1.1fr);
+      gap: 14px;
       align-items: start;
     }
 
+    .quickstart-list {
+      gap: 10px;
+    }
+
     .terminal {
-      border-radius: 22px;
-      padding: 22px;
-      border: 1px solid var(--border);
-      background: linear-gradient(180deg, rgba(10, 16, 29, 0.96), rgba(7, 12, 22, 0.96));
-      box-shadow: var(--shadow);
+      padding: 20px;
+      background: #fbfcfe;
     }
 
     .terminal-top {
@@ -525,446 +555,379 @@
       width: 10px;
       height: 10px;
       border-radius: 50%;
-      background: rgba(255, 255, 255, 0.18);
+      background: #d6deea;
     }
 
     .dot:nth-child(1) { background: #ff5f57; }
     .dot:nth-child(2) { background: #febc2e; }
     .dot:nth-child(3) { background: #28c840; }
 
-    pre, code {
-      font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
-    }
-
     pre {
       margin: 0;
       white-space: pre-wrap;
       word-break: break-word;
-      color: #ebf3ff;
       font-size: 14px;
-      line-height: 1.7;
+      color: var(--text);
+      line-height: 1.8;
     }
 
-    code.inline {
-      padding: 2px 7px;
-      border-radius: 8px;
-      border: 1px solid var(--border);
-      background: var(--code-bg);
-      font-size: 0.92em;
+    .terminal-note {
+      margin-top: 14px;
+      color: var(--text-muted);
+      font-size: 13px;
     }
 
-    .step {
-      border-radius: 22px;
-      padding: 22px;
-    }
-
-    .step-index {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 34px;
-      height: 34px;
-      border-radius: 50%;
-      margin-bottom: 14px;
-      background: linear-gradient(135deg, var(--accent-strong), #66b4ff);
-      color: #fff;
-      font-weight: 700;
-    }
-
-    .steps-grid {
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-    }
-
-    .storage-grid,
-    .links-grid {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-
-    .link-card a {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
+    .terminal-note a,
+    .link-row a {
       color: var(--accent);
       font-weight: 600;
-      margin-top: 12px;
     }
 
-    footer {
-      padding: 30px 0 48px;
-      border-top: 1px solid rgba(255, 255, 255, 0.08);
+    .footer {
+      padding: 0 0 44px;
       color: var(--text-muted);
       font-size: 13px;
       text-align: center;
     }
 
-    @media (max-width: 1024px) {
+    @media (max-width: 1080px) {
       .hero-grid,
-      .quickstart-grid,
-      .capability-grid,
-      .steps-grid {
+      .page-grid,
+      .quickstart-grid {
         grid-template-columns: 1fr;
       }
 
-      .hero-summary,
-      .storage-grid,
-      .links-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+      .page-nav {
+        position: static;
       }
     }
 
-    @media (max-width: 720px) {
+    @media (max-width: 760px) {
       .topbar-inner {
         padding: 14px 0;
         align-items: flex-start;
         flex-direction: column;
       }
 
-      .topnav {
-        gap: 12px;
+      .hero-copy,
+      .hero-panel,
+      .section-card {
+        padding: 24px;
       }
 
-      .section {
-        padding: 64px 0;
-      }
-
-      .hero {
-        padding-top: 40px;
-      }
-
-      .hero-summary,
-      .mini-grid,
-      .storage-grid,
-      .links-grid {
+      .hero-meta,
+      .mini-list,
+      .feature-grid,
+      .path-grid,
+      .links-grid,
+      .steps-list {
         grid-template-columns: 1fr;
       }
     }
 
     @media (max-width: 520px) {
       .container {
-        width: min(100% - 24px, 1120px);
+        width: min(100% - 24px, 1160px);
       }
 
       .btn {
         width: 100%;
       }
+
+      .suggestion-item {
+        grid-template-columns: 1fr;
+      }
     }
   </style>
 </head>
 <body>
-  <div class="shell">
-    <header class="topbar">
-      <div class="container topbar-inner">
-        <a class="brand" href="#top" aria-label="SnipKey 首页">
-          <span class="brand-mark">#</span>
-          <span>SnipKey</span>
-        </a>
-        <nav class="topnav" aria-label="页面导航">
+  <header class="topbar">
+    <div class="container topbar-inner">
+      <a class="brand" href="#top" aria-label="SnipKey 首页">
+        <img class="brand-icon" src="./app-icon.png" alt="SnipKey 图标" />
+        <span>SnipKey</span>
+      </a>
+      <nav class="topnav" aria-label="页面导航">
+        <a href="#capabilities">核心能力</a>
+        <a href="#workflow">使用流程</a>
+        <a href="#quickstart">快速开始</a>
+        <a href="#links">相关链接</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="container hero-grid">
+        <div class="hero-copy">
+          <span class="eyebrow">macOS 13+ · Swift 5.9+ · 开源</span>
+          <h1>把常用文本输入，变成一次触发。</h1>
+          <p>
+            SnipKey 是一个面向 macOS 的菜单栏文本扩展工具。你只需在任意应用中输入
+            <code class="inline">#trigger</code>，就能通过跟随光标的补全面板快速选择候选，
+            或直接展开为预设文本。
+          </p>
+          <div class="hero-meta" aria-label="产品亮点">
+            <div class="meta-item">
+              <strong>任意应用可用</strong>
+              <span>系统范围触发，不受编辑器限制。</span>
+            </div>
+            <div class="meta-item">
+              <strong>全程键盘完成</strong>
+              <span>选择、确认、展开都尽量不打断输入。</span>
+            </div>
+            <div class="meta-item">
+              <strong>长期可维护</strong>
+              <span>支持变量、搜索、导入导出与历史管理。</span>
+            </div>
+          </div>
+          <div class="cta-row">
+            <a class="btn btn-primary" href="https://github.com/Alohalt/SnipKey/releases">下载 Release</a>
+            <a class="btn" href="https://github.com/Alohalt/SnipKey">查看 GitHub 仓库</a>
+            <a class="btn" href="#quickstart">快速开始</a>
+          </div>
+        </div>
+
+        <aside class="hero-panel" aria-label="SnipKey 交互预览">
+          <div class="panel-head">
+            <div class="panel-title">
+              <img src="./app-icon.png" alt="SnipKey 应用图标" />
+              <div>
+                <strong>SnipKey 交互预览</strong>
+                <span>简洁、原生、低打扰</span>
+              </div>
+            </div>
+            <span class="panel-badge">跟随光标</span>
+          </div>
+
+          <figure class="demo-card" role="img" aria-label="SnipKey 交互示意：用户输入 #acc 后，面板显示 account 与 account_cn 两个候选，其中 account 已被高亮，可按 Tab 确认。">
+            <div class="input-line">输入中：<span class="token token-accent">#acc</span></div>
+            <div class="suggestion-list">
+              <div class="suggestion-item active">
+                <span class="token token-accent">account</span>
+                <div>
+                  <strong>企业账号登录信息</strong>
+                  <p>支持变量：<code class="inline">{date}</code>、<code class="inline">{cursor}</code></p>
+                </div>
+                <span class="token">Tab</span>
+              </div>
+              <div class="suggestion-item">
+                <span class="token">account_cn</span>
+                <div>
+                  <strong>中文客服回复模板</strong>
+                  <p>按接受次数排序，常用内容优先出现。</p>
+                </div>
+                <span class="token">Enter</span>
+              </div>
+            </div>
+          </figure>
+
+          <div class="mini-list">
+            <div class="mini-item">
+              <h3>输入不中断</h3>
+              <p>从触发到确认尽量保留原有编辑节奏。</p>
+            </div>
+            <div class="mini-item">
+              <h3>内容更智能</h3>
+              <p>变量插入和剪贴板建议让文本片段更好维护。</p>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section class="page-layout">
+      <div class="container page-grid">
+        <aside class="page-nav" aria-label="页面分区导航">
+          <strong>页面目录</strong>
           <a href="#capabilities">核心能力</a>
           <a href="#workflow">使用流程</a>
           <a href="#quickstart">快速开始</a>
+          <a href="#storage">数据与维护</a>
           <a href="#links">相关链接</a>
-        </nav>
-      </div>
-    </header>
+        </aside>
 
-    <main id="top">
-      <section class="hero">
-        <div class="container hero-grid">
-          <div class="hero-copy">
-            <span class="eyebrow">macOS 13+ · Swift 5.9+ · 开源</span>
-            <h1>让常用文本输入，从重复劳动变成一次触发。</h1>
-            <p>
-              SnipKey 是一个面向 macOS 的菜单栏文本扩展工具。你只需要在任意应用中输入
-              <code class="inline">#trigger</code>，就能通过跟随光标的补全面板快速选择候选，
-              或直接展开为预设文本。
-            </p>
-            <div class="hero-summary" aria-label="产品亮点">
-              <div class="summary-item">
-                <strong>任意应用可用</strong>
-                <span>系统范围监听输入，不局限于单一编辑器。</span>
-              </div>
-              <div class="summary-item">
-                <strong>原生补全体验</strong>
-                <span>候选面板跟随光标，支持键盘无缝确认。</span>
-              </div>
-              <div class="summary-item">
-                <strong>内容可持续管理</strong>
-                <span>三栏设置、变量插入、导入导出一体化。</span>
-              </div>
+        <div class="content-stack">
+          <section id="capabilities" class="section-card">
+            <div class="section-head">
+              <span class="eyebrow">核心能力</span>
+              <h2>围绕“触发、选择、展开、维护”组织体验。</h2>
+              <p class="section-copy">
+                页面信息按真实使用路径展开，减少冗余装饰，优先说明用户最关心的能力和上手方式。
+              </p>
             </div>
-            <div class="cta-row">
-              <a class="btn btn-primary" href="https://github.com/Alohalt/SnipKey">查看 GitHub 仓库</a>
-              <a class="btn" href="https://github.com/Alohalt/SnipKey/releases">下载 Release</a>
-              <a class="btn" href="#quickstart">快速开始</a>
-            </div>
-          </div>
 
-          <aside class="hero-panel" aria-label="SnipKey 交互预览">
-            <div class="panel-label">核心交互预览</div>
-            <figure class="demo-card" role="img" aria-label="SnipKey 交互示意：用户输入 #acc 后，面板显示 account 与 account_cn 两个候选，其中 account 已被高亮，可按 Tab 确认。">
-              <figcaption class="panel-label demo-caption">输入与候选示意</figcaption>
-              <div class="input-line">输入中：<span class="token">#acc</span></div>
-              <div class="suggestion-list">
-                <div class="suggestion-item active">
-                  <span class="token token-success">account</span>
-                  <div>
-                    <strong>企业账号登录信息</strong>
-                    <p>支持变量：<code class="inline">{date}</code>、<code class="inline">{cursor}</code></p>
-                  </div>
-                  <span class="token">Tab</span>
+            <div class="feature-grid">
+              <article class="feature-item">
+                <h3>输入阶段：快速捕获触发词</h3>
+                <p>系统范围监听 <code class="inline">#</code> 前缀触发词，在任意可输入文本的应用中都能触发。</p>
+                <div class="tag-row">
+                  <span class="tag">全局触发</span>
+                  <span class="tag">菜单栏常驻</span>
+                  <span class="tag">低打扰</span>
                 </div>
-                <div class="suggestion-item">
-                  <span class="token">account_cn</span>
-                  <div>
-                    <strong>中文客服回复模板</strong>
-                    <p>按接受次数排序，常用内容优先出现。</p>
-                  </div>
-                  <span class="token">Enter</span>
+              </article>
+              <article class="feature-item">
+                <h3>选择阶段：候选面板跟随光标</h3>
+                <p>支持上下选择、<code class="inline">Tab</code> / <code class="inline">Enter</code> 确认、<code class="inline">Esc</code> 取消。</p>
+                <div class="tag-row">
+                  <span class="tag">跟随光标</span>
+                  <span class="tag">键盘驱动</span>
+                  <span class="tag">频率排序</span>
                 </div>
-              </div>
-            </figure>
-
-            <div class="mini-grid">
-              <div class="mini-card">
-                <h3>输入不中断</h3>
-                <p>从触发、候选到展开，全程用键盘完成，不打断当前编辑流程。</p>
-              </div>
-              <div class="mini-card">
-                <h3>内容更智能</h3>
-                <p>动态变量、剪贴板建议、触发词校验，让常用文本可维护、可复用。</p>
-              </div>
+              </article>
+              <article class="feature-item">
+                <h3>展开阶段：模板支持变量</h3>
+                <p>可嵌入 <code class="inline">{date}</code>、<code class="inline">{time}</code>、<code class="inline">{clipboard}</code>、<code class="inline">{cursor}</code>。</p>
+                <div class="tag-row">
+                  <span class="tag">动态变量</span>
+                  <span class="tag">上下文插入</span>
+                  <span class="tag">可编辑光标位</span>
+                </div>
+              </article>
+              <article class="feature-item">
+                <h3>维护阶段：原生设置界面</h3>
+                <p>分组、搜索、创建、编辑、删除与 JSON 导入导出都集中在一个原生设置窗口中。</p>
+                <div class="tag-row">
+                  <span class="tag">三栏设置</span>
+                  <span class="tag">搜索管理</span>
+                  <span class="tag">JSON 导入导出</span>
+                </div>
+              </article>
             </div>
-          </aside>
-        </div>
-      </section>
+          </section>
 
-      <section id="capabilities" class="section">
-        <div class="container">
-          <div class="section-header">
-            <span class="eyebrow">核心能力</span>
-            <h2>把“触发、选择、展开、维护”做成一条顺滑链路。</h2>
-            <p>
-              页面内容按真实使用路径展开，先说明它能替你省下什么，再说明它如何在日常输入中稳定工作。
-            </p>
-          </div>
+          <section id="workflow" class="section-card">
+            <div class="section-head">
+              <span class="eyebrow">使用流程</span>
+              <h2>第一次配置后，后续使用只剩 4 个动作。</h2>
+              <p class="section-copy">保留最小心智路径，让用户先理解怎么用，再深入了解细节。</p>
+            </div>
 
-          <div class="capability-grid">
-            <article class="card">
-              <h3>输入阶段：快速捕获触发词</h3>
-              <p>
-                系统范围监听键盘输入，捕获 <code class="inline">#</code> 前缀触发词，在任意可输入文本的应用中都能触发。
-              </p>
-              <div class="tag-row">
-                <span class="tag">全局触发</span>
-                <span class="tag">菜单栏常驻</span>
-                <span class="tag">低打扰</span>
-              </div>
-            </article>
+            <ol class="steps-list">
+              <li>
+                <div class="step-index">1</div>
+                <strong>打开设置</strong>
+                <p>启动应用后，从菜单栏进入设置界面，开始维护自己的常用文本片段。</p>
+              </li>
+              <li>
+                <div class="step-index">2</div>
+                <strong>创建 Key</strong>
+                <p>例如创建 <code class="inline">account</code>，填写需要插入的替换内容或变量模板。</p>
+              </li>
+              <li>
+                <div class="step-index">3</div>
+                <strong>任意应用中触发</strong>
+                <p>回到聊天、文档、邮件等输入场景，输入 <code class="inline">#account</code> 即可看到候选。</p>
+              </li>
+              <li>
+                <div class="step-index">4</div>
+                <strong>键盘确认展开</strong>
+                <p>通过 <code class="inline">Tab</code>、<code class="inline">Enter</code> 或终止字符确认，SnipKey 会自动替换已输入触发词。</p>
+              </li>
+            </ol>
+          </section>
 
-            <article class="card">
-              <h3>选择阶段：补全面板跟随光标</h3>
-              <p>
-                浮动候选面板紧贴当前输入位置展示匹配结果，支持上下选择、<code class="inline">Tab</code> /
-                <code class="inline">Enter</code> 确认、<code class="inline">Esc</code> 取消。
-              </p>
-              <div class="tag-row">
-                <span class="tag">跟随光标</span>
-                <span class="tag">键盘驱动</span>
-                <span class="tag">频率排序</span>
-              </div>
-            </article>
-
-            <article class="card">
-              <h3>展开阶段：内容不只是静态文本</h3>
-              <p>
-                在替换内容中嵌入 <code class="inline">{date}</code>、<code class="inline">{time}</code>、
-                <code class="inline">{clipboard}</code>、<code class="inline">{cursor}</code> 等变量，让模板带上上下文。
-              </p>
-              <div class="tag-row">
-                <span class="tag">动态变量</span>
-                <span class="tag">上下文插入</span>
-                <span class="tag">可编辑光标位</span>
-              </div>
-            </article>
-
-            <article class="card">
-              <h3>维护阶段：原生三栏设置界面</h3>
-              <p>
-                分组、搜索、创建、编辑、删除与 JSON 导入导出都在一个原生设置窗口内完成，适合持续积累常用片段。
-              </p>
-              <div class="tag-row">
-                <span class="tag">三栏设置</span>
-                <span class="tag">搜索管理</span>
-                <span class="tag">JSON 导入导出</span>
-              </div>
-            </article>
-
-            <article class="card">
-              <h3>智能增强：剪贴板建议</h3>
-              <p>
-                记录剪贴板历史，重复复制内容时主动建议一键生成新的 Key，并在本地生成简短触发词，帮助你把“临时复制”沉淀为“长期复用”。
-              </p>
-              <div class="tag-row">
-                <span class="tag">剪贴板历史</span>
-                <span class="tag">智能建议</span>
-                <span class="tag">本地生成触发词</span>
-              </div>
-            </article>
-
-            <article class="card">
-              <h3>稳定性：触发词校验与归一化</h3>
-              <p>
-                触发词仅允许字母、数字、下划线；保存时校验唯一性；导入历史数据时自动归一化，减少维护成本。
-              </p>
-              <div class="tag-row">
-                <span class="tag">唯一性校验</span>
-                <span class="tag">自动归一化</span>
-                <span class="tag">更少冲突</span>
-              </div>
-            </article>
-          </div>
-        </div>
-      </section>
-
-      <section id="workflow" class="section">
-        <div class="container">
-          <div class="section-header">
-            <span class="eyebrow">使用流程</span>
-            <h2>第一次配置后，后续使用只剩 4 个动作。</h2>
-            <p>页面按照“先理解，再上手”的节奏组织信息，让新用户能快速建立使用心智。</p>
-          </div>
-
-          <div class="steps-grid">
-            <article class="step">
-              <div class="step-index">1</div>
-              <h3>打开设置</h3>
-              <p>启动应用后，从菜单栏进入设置界面，开始维护自己的常用文本片段。</p>
-            </article>
-            <article class="step">
-              <div class="step-index">2</div>
-              <h3>创建 Key</h3>
-              <p>例如创建 <code class="inline">account</code>，并填写需要插入的替换内容或变量模板。</p>
-            </article>
-            <article class="step">
-              <div class="step-index">3</div>
-              <h3>任意应用中触发</h3>
-              <p>回到聊天、文档、邮件等输入场景，输入 <code class="inline">#account</code> 即可看到候选。</p>
-            </article>
-            <article class="step">
-              <div class="step-index">4</div>
-              <h3>键盘确认展开</h3>
-              <p>通过 <code class="inline">Tab</code>、<code class="inline">Enter</code> 或终止字符确认，SnipKey 会自动替换已输入触发词。</p>
-            </article>
-          </div>
-        </div>
-      </section>
-
-      <section id="quickstart" class="section">
-        <div class="container quickstart-grid">
-          <div>
-            <div class="section-header">
+          <section id="quickstart" class="section-card">
+            <div class="section-head">
               <span class="eyebrow">快速开始</span>
               <h2>推荐先用签名开发包运行，权限更稳定。</h2>
-              <p>
-                对新用户来说，最关键的信息是“怎么最快跑起来”，因此这里保留最短路径，并把更完整的说明延伸到仓库文档。
-              </p>
+              <p class="section-copy">这里保留最短路径；更完整的说明继续放在仓库文档中。</p>
             </div>
 
-            <div class="card">
-              <h3>推荐方式</h3>
-              <p>让 macOS 把辅助功能权限绑定到稳定的应用身份上，减少每次重建后重新授权的问题。</p>
-              <div class="quick-tags">
-                <span class="tag">已签名开发包</span>
-                <span class="tag">权限更稳定</span>
-                <span class="tag">适合长期使用</span>
+            <div class="quickstart-grid">
+              <div class="quickstart-card">
+                <h3>推荐方式</h3>
+                <ul class="quickstart-list">
+                  <li>推荐把辅助功能权限绑定到稳定的应用身份上。</li>
+                  <li>如果本机已有可用的 Apple Development 证书，可以直接运行测试并启动应用。</li>
+                  <li>签名细节和环境说明继续参考仓库文档，不把首页做成完整教程。</li>
+                </ul>
+                <div class="tag-row">
+                  <span class="tag">已签名开发包</span>
+                  <span class="tag">权限更稳定</span>
+                  <span class="tag">适合长期使用</span>
+                </div>
               </div>
-            </div>
-          </div>
 
-          <div class="terminal">
-            <div class="terminal-top" aria-hidden="true">
-              <span class="dot"></span>
-              <span class="dot"></span>
-              <span class="dot"></span>
-            </div>
-            <pre><code>make signing-help
+              <div class="terminal">
+                <div class="terminal-top" aria-hidden="true">
+                  <span class="dot"></span>
+                  <span class="dot"></span>
+                  <span class="dot"></span>
+                </div>
+                <pre><code>make signing-help
 make bootstrap-personal-team
 make run
 
 # 如果本机已有可用 Apple Development 证书：
 make test
 make run</code></pre>
-            <p class="terminal-note">
-              更完整的签名说明见
-              <a href="https://github.com/Alohalt/SnipKey/blob/main/docs/development-signing.md" style="color: var(--accent);">
-                docs/development-signing.md
-              </a>
-            </p>
-          </div>
+                <p class="terminal-note">
+                  更完整的签名说明见
+                  <a href="https://github.com/Alohalt/SnipKey/blob/main/docs/development-signing.md">docs/development-signing.md</a>
+                </p>
+              </div>
+            </div>
+          </section>
+
+          <section id="storage" class="section-card">
+            <div class="section-head">
+              <span class="eyebrow">数据与维护</span>
+              <h2>本地数据路径保持清晰，便于备份与迁移。</h2>
+              <p class="section-copy">把常用路径直接写出来，减少用户首次上手时来回查找的成本。</p>
+            </div>
+
+            <div class="path-grid">
+              <article class="path-row">
+                <h3>Key 数据文件</h3>
+                <p><code class="inline">~/Library/Application Support/SnipKey/snippets.json</code></p>
+              </article>
+              <article class="path-row">
+                <h3>剪贴板历史</h3>
+                <p><code class="inline">~/Library/Application Support/SnipKey/clipboard-history.json</code></p>
+              </article>
+            </div>
+          </section>
+
+          <section id="links" class="section-card">
+            <div class="section-head">
+              <span class="eyebrow">相关链接</span>
+              <h2>继续深入了解 SnipKey。</h2>
+              <p class="section-copy">如果你想查看源码、说明文档或反馈问题，可以直接从这里进入。</p>
+            </div>
+
+            <div class="links-grid">
+              <article class="link-row">
+                <h3>GitHub 仓库</h3>
+                <p>查看源码、构建说明、提交记录与 Release。</p>
+                <a href="https://github.com/Alohalt/SnipKey">前往仓库 →</a>
+              </article>
+              <article class="link-row">
+                <h3>README</h3>
+                <p>了解项目结构、环境要求、测试方式与常用命令。</p>
+                <a href="https://github.com/Alohalt/SnipKey/blob/main/README.md">查看 README →</a>
+              </article>
+              <article class="link-row">
+                <h3>开发签名指南</h3>
+                <p>如果你希望在本机稳定调试权限相关行为，这里有完整说明。</p>
+                <a href="https://github.com/Alohalt/SnipKey/blob/main/docs/development-signing.md">查看签名指南 →</a>
+              </article>
+              <article class="link-row">
+                <h3>Issues</h3>
+                <p>反馈页面体验、产品建议或使用问题。</p>
+                <a href="https://github.com/Alohalt/SnipKey/issues">提交或查看 Issues →</a>
+              </article>
+            </div>
+          </section>
         </div>
-      </section>
-
-      <section class="section">
-        <div class="container">
-          <div class="section-header">
-            <span class="eyebrow">数据与维护</span>
-            <h2>本地数据清晰可见，便于备份与迁移。</h2>
-            <p>把常用路径明确写出来，能减少用户首次上手时的心智负担。</p>
-          </div>
-
-          <div class="storage-grid">
-            <article class="storage-card">
-              <h3>Key 数据文件</h3>
-              <p><code class="inline">~/Library/Application Support/SnipKey/snippets.json</code></p>
-            </article>
-            <article class="storage-card">
-              <h3>剪贴板历史</h3>
-              <p><code class="inline">~/Library/Application Support/SnipKey/clipboard-history.json</code></p>
-            </article>
-          </div>
-        </div>
-      </section>
-
-      <section id="links" class="section">
-        <div class="container">
-          <div class="section-header">
-            <span class="eyebrow">相关链接</span>
-            <h2>继续深入了解 SnipKey。</h2>
-            <p>需要源码、说明文档或问题反馈入口时，可以直接从这里进入。</p>
-          </div>
-
-          <div class="links-grid">
-            <article class="link-card">
-              <h3>GitHub 仓库</h3>
-              <p>查看源码、构建说明、提交记录与 Release。</p>
-              <a href="https://github.com/Alohalt/SnipKey">前往仓库 →</a>
-            </article>
-            <article class="link-card">
-              <h3>README</h3>
-              <p>了解项目结构、环境要求、测试方式与常用命令。</p>
-              <a href="https://github.com/Alohalt/SnipKey/blob/main/README.md">查看 README →</a>
-            </article>
-            <article class="link-card">
-              <h3>开发签名指南</h3>
-              <p>如果你希望在本机稳定调试权限相关行为，这里有完整说明。</p>
-              <a href="https://github.com/Alohalt/SnipKey/blob/main/docs/development-signing.md">查看签名指南 →</a>
-            </article>
-            <article class="link-card">
-              <h3>Issues</h3>
-              <p>反馈页面体验、产品建议或使用问题。</p>
-              <a href="https://github.com/Alohalt/SnipKey/issues">提交或查看 Issues →</a>
-            </article>
-          </div>
-        </div>
-      </section>
-    </main>
-
-    <footer>
-      <div class="container">
-        © <span id="year"></span> SnipKey · 由 GitHub Pages 托管
       </div>
-    </footer>
-  </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container">© <span id="year"></span> SnipKey · 由 GitHub Pages 托管</div>
+  </footer>
 
   <script>document.getElementById('year').textContent = new Date().getFullYear();</script>
 </body>

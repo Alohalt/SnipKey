@@ -2,6 +2,8 @@
 
 SnipKey 是一个面向 macOS 的菜单栏文本扩展工具。用户在任意应用中输入 `#trigger`，即可通过补全面板选择或直接展开为预设文本。
 
+项目主页：<https://alohalt.github.io/SnipKey/>（由 `site/` 目录通过 GitHub Actions 部署，仓库 Settings → Pages 中需选择 “GitHub Actions” 作为部署源）。
+
 
 ## 当前能力
 

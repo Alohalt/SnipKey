@@ -143,6 +143,10 @@
       color: var(--text-muted);
     }
 
+    .terminal-note {
+      margin-top: 16px;
+    }
+
     .shell {
       position: relative;
       overflow: hidden;
@@ -337,6 +341,10 @@
       font-size: 12px;
       font-weight: 600;
       margin-bottom: 16px;
+    }
+
+    .demo-caption {
+      margin-bottom: 14px;
     }
 
     .demo-card,
@@ -663,7 +671,7 @@
       <section class="hero">
         <div class="container hero-grid">
           <div class="hero-copy">
-            <span class="eyebrow">macOS 13+ · Swift 5.9+ · GitHub Pages</span>
+            <span class="eyebrow">macOS 13+ · Swift 5.9+ · 开源</span>
             <h1>让常用文本输入，从重复劳动变成一次触发。</h1>
             <p>
               SnipKey 是一个面向 macOS 的菜单栏文本扩展工具。你只需要在任意应用中输入
@@ -693,7 +701,8 @@
 
           <aside class="hero-panel" aria-label="SnipKey 交互预览">
             <div class="panel-label">核心交互预览</div>
-            <div class="demo-card">
+            <figure class="demo-card" role="img" aria-label="SnipKey 交互示意：用户输入 #acc 后，面板显示 account 与 account_cn 两个候选，其中 account 已被高亮，可按 Tab 确认。">
+              <figcaption class="panel-label demo-caption">输入与候选示意</figcaption>
               <div class="input-line">输入中：<span class="token">#acc</span></div>
               <div class="suggestion-list">
                 <div class="suggestion-item active">
@@ -713,7 +722,7 @@
                   <span class="token">Enter</span>
                 </div>
               </div>
-            </div>
+            </figure>
 
             <div class="mini-grid">
               <div class="mini-card">
@@ -885,7 +894,7 @@ make run
 # 如果本机已有可用 Apple Development 证书：
 make test
 make run</code></pre>
-            <p class="terminal-note" style="margin-top: 16px;">
+            <p class="terminal-note">
               更完整的签名说明见
               <a href="https://github.com/Alohalt/SnipKey/blob/main/docs/development-signing.md" style="color: var(--accent);">
                 docs/development-signing.md

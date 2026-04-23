@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SnipKey · macOS 菜单栏文本扩展工具</title>
+  <meta name="description" content="SnipKey 是一个面向 macOS 的菜单栏文本扩展工具：在任意应用中输入 #trigger，即可通过补全面板快速展开预设文本。" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230a84ff'/%3E%3Ctext x='32' y='44' font-family='-apple-system,Helvetica,Arial' font-size='34' font-weight='700' fill='white' text-anchor='middle'%3E%23%3C/text%3E%3C/svg%3E" />
+  <style>
+    :root {
+      --bg: #0b0d12;
+      --bg-soft: #131720;
+      --card: #1a1f2b;
+      --border: #262d3d;
+      --text: #e6e8ee;
+      --text-muted: #9aa3b2;
+      --accent: #0a84ff;
+      --accent-soft: rgba(10, 132, 255, 0.12);
+      --code-bg: #0f131c;
+    }
+    @media (prefers-color-scheme: light) {
+      :root {
+        --bg: #ffffff;
+        --bg-soft: #f5f7fa;
+        --card: #ffffff;
+        --border: #e3e7ee;
+        --text: #1d2230;
+        --text-muted: #5c6473;
+        --accent: #0a84ff;
+        --accent-soft: rgba(10, 132, 255, 0.08);
+        --code-bg: #f1f4f9;
+      }
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+        "Hiragino Sans GB", "Microsoft YaHei", Helvetica, Arial, sans-serif;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .container { max-width: 960px; margin: 0 auto; padding: 0 24px; }
+
+    header.hero {
+      padding: 80px 0 64px;
+      text-align: center;
+      background: radial-gradient(ellipse at top, var(--accent-soft), transparent 60%);
+    }
+    .badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 20px;
+    }
+    h1 {
+      font-size: 48px;
+      line-height: 1.15;
+      margin: 0 0 16px;
+      letter-spacing: -0.02em;
+    }
+    .tagline {
+      font-size: 19px;
+      color: var(--text-muted);
+      max-width: 640px;
+      margin: 0 auto 32px;
+    }
+    .cta {
+      display: inline-flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .btn {
+      display: inline-block;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-weight: 500;
+      font-size: 15px;
+      border: 1px solid var(--border);
+      color: var(--text);
+      background: var(--bg-soft);
+      transition: transform 0.05s ease;
+    }
+    .btn:hover { text-decoration: none; transform: translateY(-1px); }
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+    }
+
+    section { padding: 56px 0; border-top: 1px solid var(--border); }
+    section h2 {
+      font-size: 28px;
+      margin: 0 0 24px;
+      letter-spacing: -0.01em;
+    }
+
+    .features {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 16px;
+    }
+    .feature {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+    }
+    .feature h3 { margin: 0 0 8px; font-size: 16px; }
+    .feature p { margin: 0; color: var(--text-muted); font-size: 14px; }
+
+    pre, code { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px 18px;
+      overflow-x: auto;
+      font-size: 13.5px;
+      line-height: 1.55;
+    }
+    code { font-size: 0.92em; }
+    p code, li code {
+      background: var(--code-bg);
+      padding: 2px 6px;
+      border-radius: 5px;
+      border: 1px solid var(--border);
+    }
+
+    ol.steps { padding-left: 20px; }
+    ol.steps li { margin-bottom: 8px; }
+
+    .vars {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 8px 0 0;
+      padding: 0;
+      list-style: none;
+    }
+    .vars li {
+      background: var(--accent-soft);
+      color: var(--accent);
+      border: 1px solid var(--border);
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 13px;
+    }
+
+    footer {
+      padding: 32px 0 48px;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 13px;
+      border-top: 1px solid var(--border);
+    }
+    @media (max-width: 600px) {
+      h1 { font-size: 36px; }
+      header.hero { padding: 56px 0 40px; }
+      section { padding: 40px 0; }
+    }
+  </style>
+</head>
+<body>
+  <header class="hero">
+    <div class="container">
+      <div class="badge">macOS 13+ · Swift 5.9+ · 开源</div>
+      <h1>SnipKey</h1>
+      <p class="tagline">
+        macOS 菜单栏文本扩展工具。在任意应用中输入 <code>#trigger</code>，
+        通过补全面板选择或直接展开为预设文本。
+      </p>
+      <div class="cta">
+        <a class="btn btn-primary" href="https://github.com/Alohalt/SnipKey">查看 GitHub 仓库</a>
+        <a class="btn" href="https://github.com/Alohalt/SnipKey#快速开始">快速开始</a>
+        <a class="btn" href="https://github.com/Alohalt/SnipKey/releases">下载 Release</a>
+      </div>
+    </div>
+  </header>
+
+  <section>
+    <div class="container">
+      <h2>核心能力</h2>
+      <div class="features">
+        <div class="feature">
+          <h3>全局触发</h3>
+          <p>系统范围内监听键盘输入，捕获 <code>#</code> 前缀触发词。</p>
+        </div>
+        <div class="feature">
+          <h3>跟随光标的补全面板</h3>
+          <p>浮动面板展示匹配结果，支持上下选择，<code>Tab</code> / <code>Enter</code> 确认，<code>Esc</code> 取消。</p>
+        </div>
+        <div class="feature">
+          <h3>菜单栏常驻</h3>
+          <p>快速打开权限引导、设置窗口和剪贴板记录，不打扰主界面。</p>
+        </div>
+        <div class="feature">
+          <h3>原生三栏设置</h3>
+          <p>分组、搜索、创建、编辑、删除，以及 JSON 导入导出。</p>
+        </div>
+        <div class="feature">
+          <h3>动态变量</h3>
+          <p>在替换文本中嵌入运行时上下文：</p>
+          <ul class="vars">
+            <li>{date}</li>
+            <li>{time}</li>
+            <li>{clipboard}</li>
+            <li>{cursor}</li>
+          </ul>
+        </div>
+        <div class="feature">
+          <h3>剪贴板智能建议</h3>
+          <p>记录剪贴板历史，重复复制时建议一键生成新的 Key，本地生成简短 trigger。</p>
+        </div>
+        <div class="feature">
+          <h3>使用频率排序</h3>
+          <p>按接受次数排序候选，常用 Key 优先展示。</p>
+        </div>
+        <div class="feature">
+          <h3>触发词校验</h3>
+          <p>仅允许字母、数字、下划线，保存时执行唯一性校验，导入时自动归一化。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="container">
+      <h2>快速开始</h2>
+      <p>推荐使用已签名的开发包运行，让 macOS 把辅助功能权限绑定到稳定的应用身份上：</p>
+      <pre><code>make signing-help
+make bootstrap-personal-team
+make run</code></pre>
+      <p>本机已经有可用 <code>Apple Development</code> 证书时，通常这样就够了：</p>
+      <pre><code>make test
+make run</code></pre>
+      <p>更完整的签名说明见
+        <a href="https://github.com/Alohalt/SnipKey/blob/main/docs/development-signing.md">docs/development-signing.md</a>。
+      </p>
+    </div>
+  </section>
+
+  <section>
+    <div class="container">
+      <h2>使用方式</h2>
+      <ol class="steps">
+        <li>启动应用后，从菜单栏打开「设置」。</li>
+        <li>新建一个 Key，例如触发词 <code>account</code>，替换内容填入需要插入的文本。</li>
+        <li>回到任意可输入文本的应用，输入 <code>#account</code>。</li>
+        <li>使用 <code>Tab</code>、<code>Enter</code> 或终止字符确认展开。</li>
+      </ol>
+      <p>展开时，SnipKey 会删除已输入的触发内容，再插入解析后的结果文本。</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="container">
+      <h2>数据存储</h2>
+      <ul>
+        <li>Key 数据：<code>~/Library/Application Support/SnipKey/snippets.json</code></li>
+        <li>剪贴板历史：<code>~/Library/Application Support/SnipKey/clipboard-history.json</code>（界面滚动保留最近 50 条）</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <div class="container">
+      <h2>相关链接</h2>
+      <ul>
+        <li><a href="https://github.com/Alohalt/SnipKey">GitHub 仓库</a></li>
+        <li><a href="https://github.com/Alohalt/SnipKey/blob/main/README.md">README</a></li>
+        <li><a href="https://github.com/Alohalt/SnipKey/blob/main/docs/development-signing.md">开发签名指南</a></li>
+        <li><a href="https://github.com/Alohalt/SnipKey/issues">Issues</a></li>
+      </ul>
+    </div>
+  </section>
+
+  <footer>
+    <div class="container">
+      © <span id="year"></span> SnipKey · 由 GitHub Pages 托管
+    </div>
+  </footer>
+  <script>document.getElementById('year').textContent = new Date().getFullYear();</script>
+</body>
+</html>

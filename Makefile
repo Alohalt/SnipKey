@@ -6,6 +6,7 @@ BUILD_CONFIGURATION ?= debug
 BUILD_DIR := .build/$(BUILD_CONFIGURATION)
 BUILD_PRODUCT := $(BUILD_DIR)/$(SWIFT_RUN_TARGET)
 APP_ICON := Resources/AppIcon.icns
+WINDOWS_PROJECT := Windows/SnipKey.Windows/SnipKey.Windows.csproj
 
 DIST_APP_NAME ?= SnipKey.app
 DIST_APP_DISPLAY_NAME ?= SnipKey
@@ -30,7 +31,7 @@ APPLE_DEVELOPMENT_IDENTITY ?= $(shell security find-identity -v -p codesigning 2
 DEVELOPER_ID_APPLICATION_IDENTITY ?= $(shell security find-identity -v -p codesigning 2>/dev/null | sed -n 's/.*"\(Developer ID Application:[^"]*\)"/\1/p' | head -n 1)
 DIST_SIGNING_IDENTITY ?= $(if $(DEVELOPER_ID_APPLICATION_IDENTITY),$(DEVELOPER_ID_APPLICATION_IDENTITY),$(APPLE_DEVELOPMENT_IDENTITY))
 
-.PHONY: build test run run-swift clean bundle bundle-dev bundle-dist dmg package-dmg verify-dist install-dev run-dev restart-dev verify-dev uninstall-dev signing-identities print-signing-identity print-dist-signing-identity signing-help bootstrap-personal-team generate-icon
+.PHONY: build test run run-swift clean windows-build windows-run bundle bundle-dev bundle-dist dmg package-dmg verify-dist install-dev run-dev restart-dev verify-dev uninstall-dev signing-identities print-signing-identity print-dist-signing-identity signing-help bootstrap-personal-team generate-icon
 
 define require_apple_development_identity
 	@if [ -z "$(APPLE_DEVELOPMENT_IDENTITY)" ]; then \
@@ -72,6 +73,20 @@ run: restart-dev
 
 run-swift:
 	swift run $(SWIFT_RUN_TARGET)
+
+windows-build:
+	@if ! command -v dotnet >/dev/null 2>&1; then \
+		echo "dotnet SDK was not found. Install .NET 8 SDK on Windows, then rerun this target."; \
+		exit 1; \
+	fi
+	dotnet build "$(WINDOWS_PROJECT)"
+
+windows-run:
+	@if ! command -v dotnet >/dev/null 2>&1; then \
+		echo "dotnet SDK was not found. Install .NET 8 SDK on Windows, then rerun this target."; \
+		exit 1; \
+	fi
+	dotnet run --project "$(WINDOWS_PROJECT)"
 
 clean:
 	swift package clean

@@ -5,5 +5,7 @@
 *.xcodeproj
 xcuserdata/
 .vscode/
+Windows/**/bin/
+Windows/**/obj/
 *.png
 *.svg

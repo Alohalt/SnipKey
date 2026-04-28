@@ -2,14 +2,17 @@ import Cocoa
 import SwiftUI
 import SnipKeyCore
 
-class CompletionPanel {
+final class CompletionPanel {
+    private let panelCornerRadius: CGFloat = 18
     private let screenPadding: CGFloat = 8
 
-    private var panel: NSPanel?
-    private var hostingView: NSHostingView<CompletionView>?
+    private var panel: CompletionFloatingPanel?
+    private var hostingView: CompletionHostingView?
+    private var shouldAutoScrollSelection = false
 
     private(set) var matchedSnippets: [Snippet] = []
     private(set) var selectedIndex: Int = 0
+    var onConfirmSelection: ((Snippet) -> Void)?
 
     var selectedSnippet: Snippet? {
         guard !matchedSnippets.isEmpty, selectedIndex < matchedSnippets.count else { return nil }
@@ -19,16 +22,17 @@ class CompletionPanel {
     func show(snippets: [Snippet], near position: NSPoint?) {
         matchedSnippets = snippets
         selectedIndex = 0
+        shouldAutoScrollSelection = false
 
         if snippets.isEmpty {
             hide()
             return
         }
 
-        let view = CompletionView(snippets: snippets, selectedIndex: selectedIndex)
+        let view = makeView()
 
         if panel == nil {
-            let p = NSPanel(
+            let p = CompletionFloatingPanel(
                 contentRect: .zero,
                 styleMask: [.borderless, .nonactivatingPanel],
                 backing: .buffered,
@@ -38,6 +42,9 @@ class CompletionPanel {
             p.isOpaque = false
             p.backgroundColor = .clear
             p.hasShadow = false
+            p.hidesOnDeactivate = false
+            p.becomesKeyOnlyIfNeeded = true
+            p.acceptsMouseMovedEvents = true
             p.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
             panel = p
         }
@@ -48,7 +55,7 @@ class CompletionPanel {
             hostingView.layoutSubtreeIfNeeded()
             panel?.setContentSize(hostingView.fittingSize)
         } else {
-            let hosting = NSHostingView(rootView: view)
+            let hosting = CompletionHostingView(rootView: view)
             hosting.frame.size = hosting.fittingSize
             panel?.contentView = hosting
             panel?.setContentSize(hosting.fittingSize)
@@ -67,14 +74,13 @@ class CompletionPanel {
     }
 
     func updateView() {
-        let view = CompletionView(snippets: matchedSnippets, selectedIndex: selectedIndex)
+        let view = makeView()
         if let hostingView {
             hostingView.rootView = view
             hostingView.invalidateIntrinsicContentSize()
             hostingView.layoutSubtreeIfNeeded()
-            panel?.setContentSize(hostingView.fittingSize)
         } else {
-            let hosting = NSHostingView(rootView: view)
+            let hosting = CompletionHostingView(rootView: view)
             hosting.frame.size = hosting.fittingSize
             panel?.contentView = hosting
             panel?.setContentSize(hosting.fittingSize)
@@ -91,17 +97,23 @@ class CompletionPanel {
     func moveSelectionUp() {
         guard !matchedSnippets.isEmpty else { return }
         selectedIndex = (selectedIndex - 1 + matchedSnippets.count) % matchedSnippets.count
+        shouldAutoScrollSelection = true
         updateView()
     }
 
     func moveSelectionDown() {
         guard !matchedSnippets.isEmpty else { return }
         selectedIndex = (selectedIndex + 1) % matchedSnippets.count
+        shouldAutoScrollSelection = true
         updateView()
     }
 
     var isVisible: Bool {
         panel?.isVisible ?? false
+    }
+
+    func containsScreenPoint(_ point: NSPoint) -> Bool {
+        panel?.frame.contains(point) ?? false
     }
 
     private func panelOrigin(near position: NSPoint?, contentSize: NSSize) -> NSPoint? {
@@ -151,5 +163,61 @@ class CompletionPanel {
     private func clamped(_ value: CGFloat, min minimum: CGFloat, max maximum: CGFloat) -> CGFloat {
         guard maximum >= minimum else { return minimum }
         return Swift.min(Swift.max(value, minimum), maximum)
+    }
+
+    private func makeView() -> CompletionView {
+        CompletionView(
+            snippets: matchedSnippets,
+            selectedIndex: selectedIndex,
+            shouldAutoScrollSelection: shouldAutoScrollSelection,
+            onHoverSelection: { [weak self] index in
+                self?.selectSnippet(at: index)
+            },
+            onConfirmSelection: { [weak self] index in
+                self?.confirmSnippet(at: index)
+            }
+        )
+    }
+
+    private func selectSnippet(at index: Int) {
+        guard matchedSnippets.indices.contains(index), selectedIndex != index else { return }
+        selectedIndex = index
+        shouldAutoScrollSelection = false
+        updateView()
+    }
+
+    private func confirmSnippet(at index: Int) {
+        guard matchedSnippets.indices.contains(index) else { return }
+        selectedIndex = index
+        onConfirmSelection?(matchedSnippets[index])
+    }
+}
+
+private final class CompletionFloatingPanel: NSPanel {
+    override var canBecomeKey: Bool { true }
+    override var canBecomeMain: Bool { false }
+}
+
+private final class CompletionHostingView: NSHostingView<CompletionView> {
+    required init(rootView: CompletionView) {
+        super.init(rootView: rootView)
+        configureAppearance()
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    override func acceptsFirstMouse(for event: NSEvent?) -> Bool {
+        true
+    }
+
+    private func configureAppearance() {
+        wantsLayer = true
+        layer?.backgroundColor = NSColor.clear.cgColor
+        layer?.cornerRadius = 18
+        layer?.cornerCurve = .continuous
+        layer?.masksToBounds = true
     }
 }

@@ -60,6 +60,8 @@ Keyboard input → CGEvent Tap intercepts
 - Appears immediately after `#` is typed, showing all snippets
 - Filters in real-time as each character is typed
 - Up/Down arrows to select, Tab/Enter to confirm, Esc to dismiss
+- Mouse hover highlights a candidate; clicking a candidate confirms it
+- A single click outside the completion window cancels the current completion session
 - Auto-hides when no matches found
 
 ## Data Model
@@ -115,7 +117,7 @@ struct SnippetGroup: Codable, Identifiable {
 ### 3. Completion Popup (NSPanel)
 - Borderless, floating, always-on-top
 - Shows matching snippets with trigger and preview
-- Keyboard navigable (up/down/enter/esc)
+- Keyboard navigable (up/down/enter/esc) and mouse selectable
 - Positioned near text cursor using Accessibility API for cursor position
 
 ## Future Considerations (not in v1)

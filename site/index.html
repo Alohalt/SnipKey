@@ -1,12 +1,13 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>SnipKey · 更快输入常用文本的 macOS 菜单栏工具</title>
+  <title id="page-title">SnipKey · A Faster Way to Insert Reusable Text on macOS</title>
   <meta
+    id="page-description"
     name="description"
-    content="SnipKey 是一个面向 macOS 的菜单栏文本扩展工具：在任意应用中输入 #trigger，即可通过补全面板快速展开预设文本。"
+    content="SnipKey is a macOS menu bar text expansion tool: type #trigger in any app to expand saved text through a cursor-following completion panel."
   />
   <meta name="theme-color" content="#f7f9fc" />
   <link rel="icon" type="image/png" href="./app-icon.png" />
@@ -123,6 +124,43 @@
     .topnav a:hover,
     .topnav a:focus-visible {
       color: var(--accent);
+    }
+
+    .lang-switch {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: var(--surface-soft);
+    }
+
+    .lang-button {
+      appearance: none;
+      border: 0;
+      background: transparent;
+      color: var(--text-muted);
+      font: inherit;
+      font-size: 13px;
+      font-weight: 600;
+      line-height: 1;
+      padding: 9px 12px;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: background-color 0.2s ease, color 0.2s ease;
+    }
+
+    .lang-button:hover,
+    .lang-button:focus-visible {
+      color: var(--text);
+      background: rgba(255, 255, 255, 0.72);
+    }
+
+    .lang-button.active {
+      color: var(--text);
+      background: var(--surface);
+      box-shadow: 0 2px 10px rgba(15, 23, 42, 0.06);
     }
 
     .hero {
@@ -643,15 +681,19 @@
 <body>
   <header class="topbar">
     <div class="container topbar-inner">
-      <a class="brand" href="#top" aria-label="SnipKey 首页">
-        <img class="brand-icon" src="./app-icon.png" alt="SnipKey 图标" />
+      <a class="brand" href="#top" id="brand-home" aria-label="SnipKey home">
+        <img class="brand-icon" src="./app-icon.png" id="brand-icon" alt="SnipKey icon" />
         <span>SnipKey</span>
       </a>
-      <nav class="topnav" aria-label="页面导航">
-        <a href="#capabilities">核心能力</a>
-        <a href="#workflow">使用流程</a>
-        <a href="#quickstart">快速开始</a>
-        <a href="#links">相关链接</a>
+      <nav class="topnav" id="top-navigation" aria-label="Page navigation">
+        <a href="#capabilities" data-i18n="navCapabilities">Capabilities</a>
+        <a href="#workflow" data-i18n="navWorkflow">Workflow</a>
+        <a href="#quickstart" data-i18n="navQuickstart">Quick Start</a>
+        <a href="#links" data-i18n="navLinks">Links</a>
+        <div class="lang-switch" id="language-switch" aria-label="Language switcher">
+          <button class="lang-button active" type="button" data-lang-toggle="en" aria-pressed="true">English</button>
+          <button class="lang-button" type="button" data-lang-toggle="zh-CN" aria-pressed="false">简体中文</button>
+        </div>
       </nav>
     </div>
   </header>
@@ -660,62 +702,60 @@
     <section class="hero">
       <div class="container hero-grid">
         <div class="hero-copy">
-          <span class="eyebrow">macOS 13+ · Swift 5.9+ · 开源</span>
-          <h1>把常用文本输入，变成一次触发。</h1>
-          <p>
-            SnipKey 是一个面向 macOS 的菜单栏文本扩展工具。你只需在任意应用中输入
-            <code class="inline">#trigger</code>，就能通过跟随光标的补全面板快速选择候选，
-            或直接展开为预设文本。
+          <span class="eyebrow" data-i18n="heroEyebrow">macOS 13+ · Swift 5.9+ · Open Source</span>
+          <h1 data-i18n="heroTitle">Turn reusable text into a single trigger.</h1>
+          <p data-i18n-html="heroDescription">
+            SnipKey is a macOS menu bar text expansion tool. Type <code class="inline">#trigger</code> in any app to open a cursor-following completion panel and expand saved text without breaking your flow.
           </p>
-          <div class="hero-meta" aria-label="产品亮点">
+          <div class="hero-meta" id="hero-meta" aria-label="Product highlights">
             <div class="meta-item">
-              <strong>任意应用可用</strong>
-              <span>系统范围触发，不受编辑器限制。</span>
+              <strong data-i18n="metaOneTitle">Works in any app</strong>
+              <span data-i18n="metaOneBody">Triggers globally across the system, not just inside one editor.</span>
             </div>
             <div class="meta-item">
-              <strong>全程键盘完成</strong>
-              <span>选择、确认、展开都尽量不打断输入。</span>
+              <strong data-i18n="metaTwoTitle">Keyboard-first flow</strong>
+              <span data-i18n="metaTwoBody">Selection, confirmation, and expansion are designed to keep typing uninterrupted.</span>
             </div>
             <div class="meta-item">
-              <strong>长期可维护</strong>
-              <span>支持变量、搜索、导入导出与历史管理。</span>
+              <strong data-i18n="metaThreeTitle">Built for upkeep</strong>
+              <span data-i18n="metaThreeBody">Variables, search, import/export, and history features keep snippets manageable.</span>
             </div>
           </div>
           <div class="cta-row">
-            <a class="btn btn-primary" href="https://github.com/Alohalt/SnipKey/releases">下载 Release</a>
-            <a class="btn" href="https://github.com/Alohalt/SnipKey">查看 GitHub 仓库</a>
-            <a class="btn" href="#quickstart">快速开始</a>
+            <a class="btn btn-primary" href="https://github.com/Alohalt/SnipKey/releases" data-i18n="ctaRelease">Download Release</a>
+            <a class="btn" href="https://github.com/Alohalt/SnipKey" data-i18n="ctaRepo">Open GitHub Repository</a>
+            <a class="btn" href="#quickstart" data-i18n="ctaQuickstart">Quick Start</a>
           </div>
         </div>
 
-        <aside class="hero-panel" aria-label="SnipKey 交互预览">
+        <aside class="hero-panel" id="hero-panel" aria-label="SnipKey interaction preview">
           <div class="panel-head">
             <div class="panel-title">
-              <img src="./app-icon.png" alt="SnipKey 应用图标" />
+              <img src="./app-icon.png" id="panel-icon" alt="SnipKey app icon" />
               <div>
-                <strong>SnipKey 交互预览</strong>
-                <span>简洁、原生、低打扰</span>
+                <strong data-i18n="panelTitle">SnipKey Interaction Preview</strong>
+                <span data-i18n="panelSubtitle">Simple, native, and low-distraction.</span>
               </div>
             </div>
-            <span class="panel-badge">跟随光标</span>
+            <span class="panel-badge" data-i18n="panelBadge">Cursor-following</span>
           </div>
 
-          <figure class="demo-card" role="img" aria-label="SnipKey 交互示意：用户输入 #acc 后，面板显示 account 与 account_cn 两个候选，其中 account 已被高亮，可按 Tab 确认。">
-            <div class="input-line">输入中：<span class="token token-accent">#acc</span></div>
+          <figure class="demo-card" id="demo-card" role="img" aria-label="SnipKey interaction preview: after typing #acc, the panel shows two candidates and highlights account for confirmation with Tab.">
+            <div class="input-line" data-i18n-html="demoInputLine">Typing: <span class="token token-accent">#acc</span></div>
             <div class="suggestion-list">
               <div class="suggestion-item active">
                 <span class="token token-accent">account</span>
                 <div>
-                  <strong>企业账号登录信息</strong>
-                  <p>支持变量：<code class="inline">{date}</code>、<code class="inline">{cursor}</code></p>
+                  <strong data-i18n="demoItemOneTitle">Company account login info</strong>
+                  <p data-i18n-html="demoItemOneBody">Variable support: <code class="inline">{date}</code> and <code class="inline">{cursor}</code></p>
                 </div>
                 <span class="token">Tab</span>
               </div>
               <div class="suggestion-item">
                 <span class="token">account_cn</span>
                 <div>
-                  <strong>中文客服回复模板</strong>
-                  <p>按接受次数排序，常用内容优先出现。</p>
+                  <strong data-i18n="demoItemTwoTitle">Chinese support reply template</strong>
+                  <p data-i18n="demoItemTwoBody">Candidates are ranked by acceptance count so frequent snippets show up first.</p>
                 </div>
                 <span class="token">Enter</span>
               </div>
@@ -724,12 +764,12 @@
 
           <div class="mini-list">
             <div class="mini-item">
-              <h3>输入不中断</h3>
-              <p>从触发到确认尽量保留原有编辑节奏。</p>
+              <h3 data-i18n="miniOneTitle">Typing stays in flow</h3>
+              <p data-i18n="miniOneBody">From trigger to confirmation, the interaction is designed to preserve your editing rhythm.</p>
             </div>
             <div class="mini-item">
-              <h3>内容更智能</h3>
-              <p>变量插入和剪贴板建议让文本片段更好维护。</p>
+              <h3 data-i18n="miniTwoTitle">Smarter snippet content</h3>
+              <p data-i18n="miniTwoBody">Variables and clipboard suggestions make reusable text easier to maintain.</p>
             </div>
           </div>
         </aside>
@@ -738,60 +778,60 @@
 
     <section class="page-layout">
       <div class="container page-grid">
-        <aside class="page-nav" aria-label="页面分区导航">
-          <strong>页面目录</strong>
-          <a href="#capabilities">核心能力</a>
-          <a href="#workflow">使用流程</a>
-          <a href="#quickstart">快速开始</a>
-          <a href="#storage">数据与维护</a>
-          <a href="#links">相关链接</a>
+        <aside class="page-nav" id="page-nav" aria-label="Page section navigation">
+          <strong data-i18n="pageNavTitle">On this page</strong>
+          <a href="#capabilities" data-i18n="navCapabilities">Capabilities</a>
+          <a href="#workflow" data-i18n="navWorkflow">Workflow</a>
+          <a href="#quickstart" data-i18n="navQuickstart">Quick Start</a>
+          <a href="#storage" data-i18n="navStorage">Data & Maintenance</a>
+          <a href="#links" data-i18n="navLinks">Links</a>
         </aside>
 
         <div class="content-stack">
           <section id="capabilities" class="section-card">
             <div class="section-head">
-              <span class="eyebrow">核心能力</span>
-              <h2>围绕“触发、选择、展开、维护”组织体验。</h2>
-              <p class="section-copy">
-                页面信息按真实使用路径展开，减少冗余装饰，优先说明用户最关心的能力和上手方式。
+              <span class="eyebrow" data-i18n="capabilitiesEyebrow">Capabilities</span>
+              <h2 data-i18n="capabilitiesTitle">Organized around trigger, choose, expand, and maintain.</h2>
+              <p class="section-copy" data-i18n="capabilitiesBody">
+                The page follows the real usage flow first, cuts unnecessary decoration, and explains the most important capabilities before anything else.
               </p>
             </div>
 
             <div class="feature-grid">
               <article class="feature-item">
-                <h3>输入阶段：快速捕获触发词</h3>
-                <p>系统范围监听 <code class="inline">#</code> 前缀触发词，在任意可输入文本的应用中都能触发。</p>
+                <h3 data-i18n="featureOneTitle">Trigger stage: capture keywords quickly</h3>
+                <p data-i18n-html="featureOneBody">SnipKey listens for triggers prefixed with <code class="inline">#</code> across the system, so it works in any app that accepts text input.</p>
                 <div class="tag-row">
-                  <span class="tag">全局触发</span>
-                  <span class="tag">菜单栏常驻</span>
-                  <span class="tag">低打扰</span>
+                  <span class="tag" data-i18n="featureOneTagOne">Global trigger</span>
+                  <span class="tag" data-i18n="featureOneTagTwo">Menu bar resident</span>
+                  <span class="tag" data-i18n="featureOneTagThree">Low interruption</span>
                 </div>
               </article>
               <article class="feature-item">
-                <h3>选择阶段：候选面板跟随光标</h3>
-                <p>支持上下选择、<code class="inline">Tab</code> / <code class="inline">Enter</code> 确认、<code class="inline">Esc</code> 取消。</p>
+                <h3 data-i18n="featureTwoTitle">Selection stage: a cursor-following panel</h3>
+                <p data-i18n-html="featureTwoBody">Use arrow keys to move, <code class="inline">Tab</code> or <code class="inline">Enter</code> to confirm, and <code class="inline">Esc</code> to cancel.</p>
                 <div class="tag-row">
-                  <span class="tag">跟随光标</span>
-                  <span class="tag">键盘驱动</span>
-                  <span class="tag">频率排序</span>
+                  <span class="tag" data-i18n="featureTwoTagOne">Cursor-following</span>
+                  <span class="tag" data-i18n="featureTwoTagTwo">Keyboard-driven</span>
+                  <span class="tag" data-i18n="featureTwoTagThree">Usage-based ranking</span>
                 </div>
               </article>
               <article class="feature-item">
-                <h3>展开阶段：模板支持变量</h3>
-                <p>可嵌入 <code class="inline">{date}</code>、<code class="inline">{time}</code>、<code class="inline">{clipboard}</code>、<code class="inline">{cursor}</code>。</p>
+                <h3 data-i18n="featureThreeTitle">Expansion stage: templates with variables</h3>
+                <p data-i18n-html="featureThreeBody">Embed <code class="inline">{date}</code>, <code class="inline">{time}</code>, <code class="inline">{clipboard}</code>, and <code class="inline">{cursor}</code> directly inside snippet content.</p>
                 <div class="tag-row">
-                  <span class="tag">动态变量</span>
-                  <span class="tag">上下文插入</span>
-                  <span class="tag">可编辑光标位</span>
+                  <span class="tag" data-i18n="featureThreeTagOne">Dynamic variables</span>
+                  <span class="tag" data-i18n="featureThreeTagTwo">Context insertion</span>
+                  <span class="tag" data-i18n="featureThreeTagThree">Cursor placement</span>
                 </div>
               </article>
               <article class="feature-item">
-                <h3>维护阶段：原生设置界面</h3>
-                <p>分组、搜索、创建、编辑、删除与 JSON 导入导出都集中在一个原生设置窗口中。</p>
+                <h3 data-i18n="featureFourTitle">Maintenance stage: native settings UI</h3>
+                <p data-i18n="featureFourBody">Grouping, search, create, edit, delete, and JSON import/export all live in one native settings window.</p>
                 <div class="tag-row">
-                  <span class="tag">三栏设置</span>
-                  <span class="tag">搜索管理</span>
-                  <span class="tag">JSON 导入导出</span>
+                  <span class="tag" data-i18n="featureFourTagOne">Three-column settings</span>
+                  <span class="tag" data-i18n="featureFourTagTwo">Search management</span>
+                  <span class="tag" data-i18n="featureFourTagThree">JSON import/export</span>
                 </div>
               </article>
             </div>
@@ -799,54 +839,54 @@
 
           <section id="workflow" class="section-card">
             <div class="section-head">
-              <span class="eyebrow">使用流程</span>
-              <h2>第一次配置后，后续使用只剩 4 个动作。</h2>
-              <p class="section-copy">保留最小心智路径，让用户先理解怎么用，再深入了解细节。</p>
+              <span class="eyebrow" data-i18n="workflowEyebrow">Workflow</span>
+              <h2 data-i18n="workflowTitle">After setup, daily use comes down to four actions.</h2>
+              <p class="section-copy" data-i18n="workflowBody">The shortest path comes first, so new users understand the flow before digging into details.</p>
             </div>
 
             <ol class="steps-list">
               <li>
                 <div class="step-index">1</div>
-                <strong>打开设置</strong>
-                <p>启动应用后，从菜单栏进入设置界面，开始维护自己的常用文本片段。</p>
+                <strong data-i18n="stepOneTitle">Open Settings</strong>
+                <p data-i18n="stepOneBody">Launch the app from the menu bar and start managing your reusable text snippets in Settings.</p>
               </li>
               <li>
                 <div class="step-index">2</div>
-                <strong>创建 Key</strong>
-                <p>例如创建 <code class="inline">account</code>，填写需要插入的替换内容或变量模板。</p>
+                <strong data-i18n="stepTwoTitle">Create a Key</strong>
+                <p data-i18n-html="stepTwoBody">Create a Key such as <code class="inline">account</code> and enter the replacement text or variable-based template you want to insert.</p>
               </li>
               <li>
                 <div class="step-index">3</div>
-                <strong>任意应用中触发</strong>
-                <p>回到聊天、文档、邮件等输入场景，输入 <code class="inline">#account</code> 即可看到候选。</p>
+                <strong data-i18n="stepThreeTitle">Trigger it in any app</strong>
+                <p data-i18n-html="stepThreeBody">Go back to chat, docs, email, or any other text field, then type <code class="inline">#account</code> to see matching candidates.</p>
               </li>
               <li>
                 <div class="step-index">4</div>
-                <strong>键盘确认展开</strong>
-                <p>通过 <code class="inline">Tab</code>、<code class="inline">Enter</code> 或终止字符确认，SnipKey 会自动替换已输入触发词。</p>
+                <strong data-i18n="stepFourTitle">Confirm and expand</strong>
+                <p data-i18n-html="stepFourBody">Confirm with <code class="inline">Tab</code>, <code class="inline">Enter</code>, or a terminating character, and SnipKey replaces the typed trigger automatically.</p>
               </li>
             </ol>
           </section>
 
           <section id="quickstart" class="section-card">
             <div class="section-head">
-              <span class="eyebrow">快速开始</span>
-              <h2>推荐先用签名开发包运行，权限更稳定。</h2>
-              <p class="section-copy">这里保留最短路径；更完整的说明继续放在仓库文档中。</p>
+              <span class="eyebrow" data-i18n="quickstartEyebrow">Quick Start</span>
+              <h2 data-i18n="quickstartTitle">Start with the signed development app for more stable permissions.</h2>
+              <p class="section-copy" data-i18n="quickstartBody">This section keeps only the shortest path. The full setup details still live in the repository docs.</p>
             </div>
 
             <div class="quickstart-grid">
               <div class="quickstart-card">
-                <h3>推荐方式</h3>
+                <h3 data-i18n="quickstartCardTitle">Recommended path</h3>
                 <ul class="quickstart-list">
-                  <li>推荐把辅助功能权限绑定到稳定的应用身份上。</li>
-                  <li>如果本机已有可用的 Apple Development 证书，可以直接运行测试并启动应用。</li>
-                  <li>签名细节和环境说明继续参考仓库文档，不把首页做成完整教程。</li>
+                  <li data-i18n="quickstartListOne">Bind Accessibility permission to a stable app identity instead of a rebuilt executable path.</li>
+                  <li data-i18n="quickstartListTwo">If an Apple Development certificate is already available, you can run tests and launch the app directly.</li>
+                  <li data-i18n="quickstartListThree">Signing details and environment notes stay in the repository docs so the landing page does not become a full tutorial.</li>
                 </ul>
                 <div class="tag-row">
-                  <span class="tag">已签名开发包</span>
-                  <span class="tag">权限更稳定</span>
-                  <span class="tag">适合长期使用</span>
+                  <span class="tag" data-i18n="quickstartTagOne">Signed dev app</span>
+                  <span class="tag" data-i18n="quickstartTagTwo">More stable permissions</span>
+                  <span class="tag" data-i18n="quickstartTagThree">Better for long-term use</span>
                 </div>
               </div>
 
@@ -856,15 +896,15 @@
                   <span class="dot"></span>
                   <span class="dot"></span>
                 </div>
-                <pre><code>make signing-help
+                <pre><code id="quickstart-code">make signing-help
 make bootstrap-personal-team
 make run
 
-# 如果本机已有可用 Apple Development 证书：
+# If an Apple Development certificate is already available:
 make test
 make run</code></pre>
-                <p class="terminal-note">
-                  更完整的签名说明见
+                <p class="terminal-note" data-i18n-html="terminalNote">
+                  Full signing instructions live in
                   <a href="https://github.com/Alohalt/SnipKey/blob/main/docs/development-signing.md">docs/development-signing.md</a>
                 </p>
               </div>
@@ -873,18 +913,18 @@ make run</code></pre>
 
           <section id="storage" class="section-card">
             <div class="section-head">
-              <span class="eyebrow">数据与维护</span>
-              <h2>本地数据路径保持清晰，便于备份与迁移。</h2>
-              <p class="section-copy">把常用路径直接写出来，减少用户首次上手时来回查找的成本。</p>
+              <span class="eyebrow" data-i18n="storageEyebrow">Data & Maintenance</span>
+              <h2 data-i18n="storageTitle">Keep local data paths explicit for backup and migration.</h2>
+              <p class="section-copy" data-i18n="storageBody">Listing the important paths directly saves users from hunting through the repo the first time they need them.</p>
             </div>
 
             <div class="path-grid">
               <article class="path-row">
-                <h3>Key 数据文件</h3>
+                <h3 data-i18n="storageKeyTitle">Key data file</h3>
                 <p><code class="inline">~/Library/Application Support/SnipKey/snippets.json</code></p>
               </article>
               <article class="path-row">
-                <h3>剪贴板历史</h3>
+                <h3 data-i18n="storageClipboardTitle">Clipboard history</h3>
                 <p><code class="inline">~/Library/Application Support/SnipKey/clipboard-history.json</code></p>
               </article>
             </div>
@@ -892,31 +932,31 @@ make run</code></pre>
 
           <section id="links" class="section-card">
             <div class="section-head">
-              <span class="eyebrow">相关链接</span>
-              <h2>继续深入了解 SnipKey。</h2>
-              <p class="section-copy">如果你想查看源码、说明文档或反馈问题，可以直接从这里进入。</p>
+              <span class="eyebrow" data-i18n="linksEyebrow">Links</span>
+              <h2 data-i18n="linksTitle">Keep exploring SnipKey.</h2>
+              <p class="section-copy" data-i18n="linksBody">Jump from here to source code, docs, releases, or issue tracking without hunting through the repository.</p>
             </div>
 
             <div class="links-grid">
               <article class="link-row">
-                <h3>GitHub 仓库</h3>
-                <p>查看源码、构建说明、提交记录与 Release。</p>
-                <a href="https://github.com/Alohalt/SnipKey">前往仓库 →</a>
+                <h3 data-i18n="linkOneTitle">GitHub Repository</h3>
+                <p data-i18n="linkOneBody">Browse source code, build instructions, commit history, and releases.</p>
+                <a href="https://github.com/Alohalt/SnipKey" data-i18n="linkOneAction">Open repository →</a>
               </article>
               <article class="link-row">
-                <h3>README</h3>
-                <p>了解项目结构、环境要求、测试方式与常用命令。</p>
-                <a href="https://github.com/Alohalt/SnipKey/blob/main/README.md">查看 README →</a>
+                <h3 data-i18n="linkTwoTitle">README</h3>
+                <p data-i18n="linkTwoBody">Review the project structure, requirements, testing strategy, and common commands.</p>
+                <a id="readme-link" href="https://github.com/Alohalt/SnipKey/blob/main/README.md" data-i18n="linkTwoAction">Open README →</a>
               </article>
               <article class="link-row">
-                <h3>开发签名指南</h3>
-                <p>如果你希望在本机稳定调试权限相关行为，这里有完整说明。</p>
-                <a href="https://github.com/Alohalt/SnipKey/blob/main/docs/development-signing.md">查看签名指南 →</a>
+                <h3 data-i18n="linkThreeTitle">Development signing guide</h3>
+                <p data-i18n="linkThreeBody">If you want stable permission behavior while debugging locally, this document explains the full workflow.</p>
+                <a href="https://github.com/Alohalt/SnipKey/blob/main/docs/development-signing.md" data-i18n="linkThreeAction">Open signing guide →</a>
               </article>
               <article class="link-row">
-                <h3>Issues</h3>
-                <p>反馈页面体验、产品建议或使用问题。</p>
-                <a href="https://github.com/Alohalt/SnipKey/issues">提交或查看 Issues →</a>
+                <h3 data-i18n="linkFourTitle">Issues</h3>
+                <p data-i18n="linkFourBody">Report site issues, product suggestions, or general usage problems.</p>
+                <a href="https://github.com/Alohalt/SnipKey/issues" data-i18n="linkFourAction">Open issues →</a>
               </article>
             </div>
           </section>
@@ -926,9 +966,291 @@ make run</code></pre>
   </main>
 
   <footer class="footer">
-    <div class="container">© <span id="year"></span> SnipKey · 由 GitHub Pages 托管</div>
+    <div class="container">© <span id="year"></span> SnipKey · <span data-i18n="footerHosted">Hosted on GitHub Pages</span></div>
   </footer>
 
-  <script>document.getElementById('year').textContent = new Date().getFullYear();</script>
+  <script>
+    const translations = {
+      en: {
+        pageTitle: "SnipKey · A Faster Way to Insert Reusable Text on macOS",
+        pageDescription: "SnipKey is a macOS menu bar text expansion tool: type #trigger in any app to expand saved text through a cursor-following completion panel.",
+        brandHomeAria: "SnipKey home",
+        brandIconAlt: "SnipKey icon",
+        topNavigationAria: "Page navigation",
+        languageSwitcherAria: "Language switcher",
+        navCapabilities: "Capabilities",
+        navWorkflow: "Workflow",
+        navQuickstart: "Quick Start",
+        navStorage: "Data & Maintenance",
+        navLinks: "Links",
+        heroEyebrow: "macOS 13+ · Swift 5.9+ · Open Source",
+        heroTitle: "Turn reusable text into a single trigger.",
+        heroDescription: "SnipKey is a macOS menu bar text expansion tool. Type <code class=\"inline\">#trigger</code> in any app to open a cursor-following completion panel and expand saved text without breaking your flow.",
+        heroMetaAria: "Product highlights",
+        metaOneTitle: "Works in any app",
+        metaOneBody: "Triggers globally across the system, not just inside one editor.",
+        metaTwoTitle: "Keyboard-first flow",
+        metaTwoBody: "Selection, confirmation, and expansion are designed to keep typing uninterrupted.",
+        metaThreeTitle: "Built for upkeep",
+        metaThreeBody: "Variables, search, import/export, and history features keep snippets manageable.",
+        ctaRelease: "Download Release",
+        ctaRepo: "Open GitHub Repository",
+        ctaQuickstart: "Quick Start",
+        heroPanelAria: "SnipKey interaction preview",
+        panelIconAlt: "SnipKey app icon",
+        panelTitle: "SnipKey Interaction Preview",
+        panelSubtitle: "Simple, native, and low-distraction.",
+        panelBadge: "Cursor-following",
+        demoAria: "SnipKey interaction preview: after typing #acc, the panel shows two candidates and highlights account for confirmation with Tab.",
+        demoInputLine: "Typing: <span class=\"token token-accent\">#acc</span>",
+        demoItemOneTitle: "Company account login info",
+        demoItemOneBody: "Variable support: <code class=\"inline\">{date}</code> and <code class=\"inline\">{cursor}</code>",
+        demoItemTwoTitle: "Chinese support reply template",
+        demoItemTwoBody: "Candidates are ranked by acceptance count so frequent snippets show up first.",
+        miniOneTitle: "Typing stays in flow",
+        miniOneBody: "From trigger to confirmation, the interaction is designed to preserve your editing rhythm.",
+        miniTwoTitle: "Smarter snippet content",
+        miniTwoBody: "Variables and clipboard suggestions make reusable text easier to maintain.",
+        pageNavAria: "Page section navigation",
+        pageNavTitle: "On this page",
+        capabilitiesEyebrow: "Capabilities",
+        capabilitiesTitle: "Organized around trigger, choose, expand, and maintain.",
+        capabilitiesBody: "The page follows the real usage flow first, cuts unnecessary decoration, and explains the most important capabilities before anything else.",
+        featureOneTitle: "Trigger stage: capture keywords quickly",
+        featureOneBody: "SnipKey listens for triggers prefixed with <code class=\"inline\">#</code> across the system, so it works in any app that accepts text input.",
+        featureOneTagOne: "Global trigger",
+        featureOneTagTwo: "Menu bar resident",
+        featureOneTagThree: "Low interruption",
+        featureTwoTitle: "Selection stage: a cursor-following panel",
+        featureTwoBody: "Use arrow keys to move, <code class=\"inline\">Tab</code> or <code class=\"inline\">Enter</code> to confirm, and <code class=\"inline\">Esc</code> to cancel.",
+        featureTwoTagOne: "Cursor-following",
+        featureTwoTagTwo: "Keyboard-driven",
+        featureTwoTagThree: "Usage-based ranking",
+        featureThreeTitle: "Expansion stage: templates with variables",
+        featureThreeBody: "Embed <code class=\"inline\">{date}</code>, <code class=\"inline\">{time}</code>, <code class=\"inline\">{clipboard}</code>, and <code class=\"inline\">{cursor}</code> directly inside snippet content.",
+        featureThreeTagOne: "Dynamic variables",
+        featureThreeTagTwo: "Context insertion",
+        featureThreeTagThree: "Cursor placement",
+        featureFourTitle: "Maintenance stage: native settings UI",
+        featureFourBody: "Grouping, search, create, edit, delete, and JSON import/export all live in one native settings window.",
+        featureFourTagOne: "Three-column settings",
+        featureFourTagTwo: "Search management",
+        featureFourTagThree: "JSON import/export",
+        workflowEyebrow: "Workflow",
+        workflowTitle: "After setup, daily use comes down to four actions.",
+        workflowBody: "The shortest path comes first, so new users understand the flow before digging into details.",
+        stepOneTitle: "Open Settings",
+        stepOneBody: "Launch the app from the menu bar and start managing your reusable text snippets in Settings.",
+        stepTwoTitle: "Create a Key",
+        stepTwoBody: "Create a Key such as <code class=\"inline\">account</code> and enter the replacement text or variable-based template you want to insert.",
+        stepThreeTitle: "Trigger it in any app",
+        stepThreeBody: "Go back to chat, docs, email, or any other text field, then type <code class=\"inline\">#account</code> to see matching candidates.",
+        stepFourTitle: "Confirm and expand",
+        stepFourBody: "Confirm with <code class=\"inline\">Tab</code>, <code class=\"inline\">Enter</code>, or a terminating character, and SnipKey replaces the typed trigger automatically.",
+        quickstartEyebrow: "Quick Start",
+        quickstartTitle: "Start with the signed development app for more stable permissions.",
+        quickstartBody: "This section keeps only the shortest path. The full setup details still live in the repository docs.",
+        quickstartCardTitle: "Recommended path",
+        quickstartListOne: "Bind Accessibility permission to a stable app identity instead of a rebuilt executable path.",
+        quickstartListTwo: "If an Apple Development certificate is already available, you can run tests and launch the app directly.",
+        quickstartListThree: "Signing details and environment notes stay in the repository docs so the landing page does not become a full tutorial.",
+        quickstartTagOne: "Signed dev app",
+        quickstartTagTwo: "More stable permissions",
+        quickstartTagThree: "Better for long-term use",
+        quickstartCode: "make signing-help\nmake bootstrap-personal-team\nmake run\n\n# If an Apple Development certificate is already available:\nmake test\nmake run",
+        terminalNote: "Full signing instructions live in <a href=\"https://github.com/Alohalt/SnipKey/blob/main/docs/development-signing.md\">docs/development-signing.md</a>",
+        storageEyebrow: "Data & Maintenance",
+        storageTitle: "Keep local data paths explicit for backup and migration.",
+        storageBody: "Listing the important paths directly saves users from hunting through the repo the first time they need them.",
+        storageKeyTitle: "Key data file",
+        storageClipboardTitle: "Clipboard history",
+        linksEyebrow: "Links",
+        linksTitle: "Keep exploring SnipKey.",
+        linksBody: "Jump from here to source code, docs, releases, or issue tracking without hunting through the repository.",
+        linkOneTitle: "GitHub Repository",
+        linkOneBody: "Browse source code, build instructions, commit history, and releases.",
+        linkOneAction: "Open repository →",
+        linkTwoTitle: "README",
+        linkTwoBody: "Review the project structure, requirements, testing strategy, and common commands.",
+        linkTwoAction: "Open README →",
+        linkThreeTitle: "Development signing guide",
+        linkThreeBody: "If you want stable permission behavior while debugging locally, this document explains the full workflow.",
+        linkThreeAction: "Open signing guide →",
+        linkFourTitle: "Issues",
+        linkFourBody: "Report site issues, product suggestions, or general usage problems.",
+        linkFourAction: "Open issues →",
+        footerHosted: "Hosted on GitHub Pages",
+        readmeHref: "https://github.com/Alohalt/SnipKey/blob/main/README.md"
+      },
+      "zh-CN": {
+        pageTitle: "SnipKey · 更快输入常用文本的 macOS 菜单栏工具",
+        pageDescription: "SnipKey 是一个面向 macOS 的菜单栏文本扩展工具：在任意应用中输入 #trigger，即可通过补全面板快速展开预设文本。",
+        brandHomeAria: "SnipKey 首页",
+        brandIconAlt: "SnipKey 图标",
+        topNavigationAria: "页面导航",
+        languageSwitcherAria: "语言切换",
+        navCapabilities: "核心能力",
+        navWorkflow: "使用流程",
+        navQuickstart: "快速开始",
+        navStorage: "数据与维护",
+        navLinks: "相关链接",
+        heroEyebrow: "macOS 13+ · Swift 5.9+ · 开源",
+        heroTitle: "把常用文本输入，变成一次触发。",
+        heroDescription: "SnipKey 是一个面向 macOS 的菜单栏文本扩展工具。你只需在任意应用中输入 <code class=\"inline\">#trigger</code>，就能通过跟随光标的补全面板快速选择候选，或直接展开为预设文本。",
+        heroMetaAria: "产品亮点",
+        metaOneTitle: "任意应用可用",
+        metaOneBody: "系统范围触发，不受编辑器限制。",
+        metaTwoTitle: "全程键盘完成",
+        metaTwoBody: "选择、确认、展开都尽量不打断输入。",
+        metaThreeTitle: "长期可维护",
+        metaThreeBody: "支持变量、搜索、导入导出与历史管理。",
+        ctaRelease: "下载 Release",
+        ctaRepo: "查看 GitHub 仓库",
+        ctaQuickstart: "快速开始",
+        heroPanelAria: "SnipKey 交互预览",
+        panelIconAlt: "SnipKey 应用图标",
+        panelTitle: "SnipKey 交互预览",
+        panelSubtitle: "简洁、原生、低打扰",
+        panelBadge: "跟随光标",
+        demoAria: "SnipKey 交互示意：用户输入 #acc 后，面板显示 account 与 account_cn 两个候选，其中 account 已被高亮，可按 Tab 确认。",
+        demoInputLine: "输入中：<span class=\"token token-accent\">#acc</span>",
+        demoItemOneTitle: "企业账号登录信息",
+        demoItemOneBody: "支持变量：<code class=\"inline\">{date}</code>、<code class=\"inline\">{cursor}</code>",
+        demoItemTwoTitle: "中文客服回复模板",
+        demoItemTwoBody: "按接受次数排序，常用内容优先出现。",
+        miniOneTitle: "输入不中断",
+        miniOneBody: "从触发到确认尽量保留原有编辑节奏。",
+        miniTwoTitle: "内容更智能",
+        miniTwoBody: "变量插入和剪贴板建议让文本片段更好维护。",
+        pageNavAria: "页面分区导航",
+        pageNavTitle: "页面目录",
+        capabilitiesEyebrow: "核心能力",
+        capabilitiesTitle: "围绕“触发、选择、展开、维护”组织体验。",
+        capabilitiesBody: "页面信息按真实使用路径展开，减少冗余装饰，优先说明用户最关心的能力和上手方式。",
+        featureOneTitle: "输入阶段：快速捕获触发词",
+        featureOneBody: "系统范围监听 <code class=\"inline\">#</code> 前缀触发词，在任意可输入文本的应用中都能触发。",
+        featureOneTagOne: "全局触发",
+        featureOneTagTwo: "菜单栏常驻",
+        featureOneTagThree: "低打扰",
+        featureTwoTitle: "选择阶段：候选面板跟随光标",
+        featureTwoBody: "支持上下选择、<code class=\"inline\">Tab</code> / <code class=\"inline\">Enter</code> 确认、<code class=\"inline\">Esc</code> 取消。",
+        featureTwoTagOne: "跟随光标",
+        featureTwoTagTwo: "键盘驱动",
+        featureTwoTagThree: "频率排序",
+        featureThreeTitle: "展开阶段：模板支持变量",
+        featureThreeBody: "可嵌入 <code class=\"inline\">{date}</code>、<code class=\"inline\">{time}</code>、<code class=\"inline\">{clipboard}</code>、<code class=\"inline\">{cursor}</code>。",
+        featureThreeTagOne: "动态变量",
+        featureThreeTagTwo: "上下文插入",
+        featureThreeTagThree: "可编辑光标位",
+        featureFourTitle: "维护阶段：原生设置界面",
+        featureFourBody: "分组、搜索、创建、编辑、删除与 JSON 导入导出都集中在一个原生设置窗口中。",
+        featureFourTagOne: "三栏设置",
+        featureFourTagTwo: "搜索管理",
+        featureFourTagThree: "JSON 导入导出",
+        workflowEyebrow: "使用流程",
+        workflowTitle: "第一次配置后，后续使用只剩 4 个动作。",
+        workflowBody: "保留最小心智路径，让用户先理解怎么用，再深入了解细节。",
+        stepOneTitle: "打开设置",
+        stepOneBody: "启动应用后，从菜单栏进入设置界面，开始维护自己的常用文本片段。",
+        stepTwoTitle: "创建 Key",
+        stepTwoBody: "例如创建 <code class=\"inline\">account</code>，填写需要插入的替换内容或变量模板。",
+        stepThreeTitle: "任意应用中触发",
+        stepThreeBody: "回到聊天、文档、邮件等输入场景，输入 <code class=\"inline\">#account</code> 即可看到候选。",
+        stepFourTitle: "键盘确认展开",
+        stepFourBody: "通过 <code class=\"inline\">Tab</code>、<code class=\"inline\">Enter</code> 或终止字符确认，SnipKey 会自动替换已输入触发词。",
+        quickstartEyebrow: "快速开始",
+        quickstartTitle: "推荐先用签名开发包运行，权限更稳定。",
+        quickstartBody: "这里保留最短路径；更完整的说明继续放在仓库文档中。",
+        quickstartCardTitle: "推荐方式",
+        quickstartListOne: "推荐把辅助功能权限绑定到稳定的应用身份上。",
+        quickstartListTwo: "如果本机已有可用的 Apple Development 证书，可以直接运行测试并启动应用。",
+        quickstartListThree: "签名细节和环境说明继续参考仓库文档，不把首页做成完整教程。",
+        quickstartTagOne: "已签名开发包",
+        quickstartTagTwo: "权限更稳定",
+        quickstartTagThree: "适合长期使用",
+        quickstartCode: "make signing-help\nmake bootstrap-personal-team\nmake run\n\n# 如果本机已有可用 Apple Development 证书：\nmake test\nmake run",
+        terminalNote: "更完整的签名说明见 <a href=\"https://github.com/Alohalt/SnipKey/blob/main/docs/development-signing.md\">docs/development-signing.md</a>",
+        storageEyebrow: "数据与维护",
+        storageTitle: "本地数据路径保持清晰，便于备份与迁移。",
+        storageBody: "把常用路径直接写出来，减少用户首次上手时来回查找的成本。",
+        storageKeyTitle: "Key 数据文件",
+        storageClipboardTitle: "剪贴板历史",
+        linksEyebrow: "相关链接",
+        linksTitle: "继续深入了解 SnipKey。",
+        linksBody: "如果你想查看源码、说明文档或反馈问题，可以直接从这里进入。",
+        linkOneTitle: "GitHub 仓库",
+        linkOneBody: "查看源码、构建说明、提交记录与 Release。",
+        linkOneAction: "前往仓库 →",
+        linkTwoTitle: "README",
+        linkTwoBody: "了解项目结构、环境要求、测试方式与常用命令。",
+        linkTwoAction: "查看 README →",
+        linkThreeTitle: "开发签名指南",
+        linkThreeBody: "如果你希望在本机稳定调试权限相关行为，这里有完整说明。",
+        linkThreeAction: "查看签名指南 →",
+        linkFourTitle: "Issues",
+        linkFourBody: "反馈页面体验、产品建议或使用问题。",
+        linkFourAction: "提交或查看 Issues →",
+        footerHosted: "由 GitHub Pages 托管",
+        readmeHref: "https://github.com/Alohalt/SnipKey/blob/main/README.zh-CN.md"
+      }
+    };
+
+    const siteLanguageKey = "snipkey-site-language";
+    const languageButtons = document.querySelectorAll("[data-lang-toggle]");
+
+    function applyLanguage(language) {
+      const locale = translations[language] || translations.en;
+
+      document.documentElement.lang = language;
+      document.title = locale.pageTitle;
+      document.getElementById("page-title").textContent = locale.pageTitle;
+      document.getElementById("page-description").setAttribute("content", locale.pageDescription);
+
+      document.querySelectorAll("[data-i18n]").forEach((element) => {
+        const key = element.getAttribute("data-i18n");
+        if (locale[key]) {
+          element.textContent = locale[key];
+        }
+      });
+
+      document.querySelectorAll("[data-i18n-html]").forEach((element) => {
+        const key = element.getAttribute("data-i18n-html");
+        if (locale[key]) {
+          element.innerHTML = locale[key];
+        }
+      });
+
+      document.getElementById("brand-home").setAttribute("aria-label", locale.brandHomeAria);
+      document.getElementById("brand-icon").setAttribute("alt", locale.brandIconAlt);
+      document.getElementById("top-navigation").setAttribute("aria-label", locale.topNavigationAria);
+      document.getElementById("language-switch").setAttribute("aria-label", locale.languageSwitcherAria);
+      document.getElementById("hero-meta").setAttribute("aria-label", locale.heroMetaAria);
+      document.getElementById("hero-panel").setAttribute("aria-label", locale.heroPanelAria);
+      document.getElementById("panel-icon").setAttribute("alt", locale.panelIconAlt);
+      document.getElementById("demo-card").setAttribute("aria-label", locale.demoAria);
+      document.getElementById("page-nav").setAttribute("aria-label", locale.pageNavAria);
+      document.getElementById("readme-link").setAttribute("href", locale.readmeHref);
+      document.getElementById("quickstart-code").textContent = locale.quickstartCode;
+
+      languageButtons.forEach((button) => {
+        const isActive = button.getAttribute("data-lang-toggle") === language;
+        button.classList.toggle("active", isActive);
+        button.setAttribute("aria-pressed", String(isActive));
+      });
+
+      window.localStorage.setItem(siteLanguageKey, language);
+    }
+
+    document.getElementById("year").textContent = new Date().getFullYear();
+
+    languageButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        applyLanguage(button.getAttribute("data-lang-toggle"));
+      });
+    });
+
+    const initialLanguage = window.localStorage.getItem(siteLanguageKey) || "en";
+    applyLanguage(initialLanguage);
+  </script>
 </body>
 </html>

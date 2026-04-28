@@ -24,10 +24,10 @@ struct SettingsView: View {
     private let headerCardHeight: CGFloat = 44
     private let replacementPreviewHeight: CGFloat = 68
     private let onboardingExampleTrigger = "first_key"
-    private let onboardingPreviewReplacement = "这是我的第一条 Key。\n你可以把常用回复、地址、签名或模板放在这里。"
 
     @ObservedObject var store: SnippetStore
     @ObservedObject var clipboardHistoryStore: ClipboardHistoryStore
+    @ObservedObject var languageStore: AppLanguageStore
     @ObservedObject var coordinator: SettingsCoordinator
     @State private var selectedSidebarSelection: SidebarSelection? = .all
     @State private var selectedSnippetId: UUID? = nil
@@ -51,13 +51,27 @@ struct SettingsView: View {
     init(
         store: SnippetStore,
         clipboardHistoryStore: ClipboardHistoryStore,
+        languageStore: AppLanguageStore,
         coordinator: SettingsCoordinator,
         initiallyShowsOnboarding: Bool = false
     ) {
         self.store = store
         self.clipboardHistoryStore = clipboardHistoryStore
+        self.languageStore = languageStore
         self.coordinator = coordinator
         _showOnboardingGuide = State(initialValue: initiallyShowsOnboarding)
+    }
+
+    private func text(_ key: L10n.Key) -> String {
+        languageStore.text(key)
+    }
+
+    private func formatted(_ key: L10n.Key, _ arguments: CVarArg...) -> String {
+        L10n.formatted(key, language: languageStore.language, arguments)
+    }
+
+    private var onboardingPreviewReplacement: String {
+        text(.settingsOnboardingPreviewReplacement)
     }
 
     var body: some View {
@@ -80,6 +94,7 @@ struct SettingsView: View {
                     stepIndex: onboardingStepIndex,
                     stepCount: onboardingSteps.count,
                     targetAnchor: anchors[currentOnboardingStep.target],
+                    languageStore: languageStore,
                     onClose: dismissOnboardingGuide,
                     onPrevious: previousOnboardingStep,
                     onNext: nextOnboardingStep
@@ -92,6 +107,7 @@ struct SettingsView: View {
                 trigger: editingTrigger,
                 originalText: editingReplacement,
                 text: $replacementEditorDraft,
+                languageStore: languageStore,
                 onCancel: { showReplacementEditor = false },
                 onApply: applyReplacementEditorChanges
             )
@@ -99,32 +115,33 @@ struct SettingsView: View {
         .sheet(isPresented: $showClipboardHistorySheet) {
             ClipboardHistorySheet(
                 historyStore: clipboardHistoryStore,
+                languageStore: languageStore,
                 onCreateSnippet: createSnippetFromClipboardRecord
             )
         }
         .sheet(isPresented: $showAboutSheet) {
-            AboutSheet()
+            AboutSheet(languageStore: languageStore)
         }
         .confirmationDialog(
-            "替换内容尚未保存",
+            text(.settingsUnsavedReplacementTitle),
             isPresented: $showUnsavedReplacementPrompt,
             titleVisibility: .visible
         ) {
-            Button("保存并继续") {
+            Button(text(.settingsSaveAndContinue)) {
                 saveEditing()
                 applyPendingSettingsAction()
             }
 
-            Button("放弃更改", role: .destructive) {
+            Button(text(.settingsDiscardChanges), role: .destructive) {
                 discardUnsavedReplacementChanges()
                 applyPendingSettingsAction()
             }
 
-            Button("取消", role: .cancel) {
+            Button(text(.commonCancel), role: .cancel) {
                 pendingSettingsAction = nil
             }
         } message: {
-            Text("替换内容有未保存的修改。继续操作前，请先保存或放弃这些更改。")
+            Text(text(.settingsUnsavedReplacementMessage))
         }
         .onChange(of: selectedSnippetId) { newValue in
             if let id = newValue, let snippet = store.snippets.first(where: { $0.id == id }) {
@@ -181,7 +198,7 @@ struct SettingsView: View {
             Text("SnipKey")
                 .font(.system(size: 25, weight: .bold, design: .rounded))
 
-            Text("像系统设置一样管理你的 Key、分组和常用文本。")
+            Text(text(.settingsSidebarSubtitle))
                 .font(.caption)
                 .foregroundColor(.secondary)
 
@@ -196,7 +213,7 @@ struct SettingsView: View {
     private var sidebarOverviewPanel: some View {
         HStack(spacing: 10) {
             overviewMetricCard(title: "Key", value: "\(store.snippets.count)", systemImage: "number.square")
-            overviewMetricCard(title: "分组", value: "\(store.groups.count)", systemImage: "folder")
+            overviewMetricCard(title: text(.settingsMetricGroups), value: "\(store.groups.count)", systemImage: "folder")
         }
         .padding(12)
         .background(
@@ -212,12 +229,12 @@ struct SettingsView: View {
 
     private var sidebarTools: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("工具")
+            Text(text(.settingsTools))
                 .font(.caption)
                 .foregroundColor(.secondary)
 
             Button(action: addGroup) {
-                Label("新建分组", systemImage: "folder.badge.plus")
+                Label(text(.settingsNewGroup), systemImage: "folder.badge.plus")
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
             .buttonStyle(.borderless)
@@ -225,7 +242,7 @@ struct SettingsView: View {
             Button {
                 showClipboardHistorySheet = true
             } label: {
-                Label("剪贴板记录", systemImage: "doc.on.clipboard")
+                Label(text(.settingsClipboardHistory), systemImage: "doc.on.clipboard")
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
             .buttonStyle(.borderless)
@@ -233,7 +250,7 @@ struct SettingsView: View {
             Button {
                 showOnboardingGuide = true
             } label: {
-                Label("使用指引", systemImage: "questionmark.circle")
+                Label(text(.settingsGuide), systemImage: "questionmark.circle")
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
             .buttonStyle(.borderless)
@@ -241,10 +258,25 @@ struct SettingsView: View {
             Button {
                 showAboutSheet = true
             } label: {
-                Label("关于 SnipKey", systemImage: "info.circle")
+                Label(text(.settingsAbout), systemImage: "info.circle")
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
             .buttonStyle(.borderless)
+
+            VStack(alignment: .leading, spacing: 6) {
+                Text(text(.languageTitle))
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+
+                Picker(text(.languageTitle), selection: $languageStore.language) {
+                    ForEach(AppLanguage.allCases) { language in
+                        Text(language.pickerTitle).tag(language)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+            }
+            .padding(.top, 4)
         }
         .padding(.horizontal, 14)
         .padding(.top, 8)
@@ -255,12 +287,12 @@ struct SettingsView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("浏览")
+                    Text(text(.settingsBrowse))
                         .font(.caption)
                         .foregroundColor(.secondary)
 
                     sidebarNavigationButton(
-                        title: "全部Key",
+                        title: text(.settingsAllKeys),
                         systemImage: "tray.full",
                         count: store.snippets.count,
                         selection: .all
@@ -268,12 +300,12 @@ struct SettingsView: View {
                 }
 
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("分组")
+                    Text(text(.settingsGroups))
                         .font(.caption)
                         .foregroundColor(.secondary)
 
                     if store.groups.isEmpty {
-                        Text("还没有分组")
+                        Text(text(.settingsNoGroups))
                             .font(.caption)
                             .foregroundColor(.secondary)
                             .padding(.horizontal, 10)
@@ -290,14 +322,14 @@ struct SettingsView: View {
                                 Button {
                                     renameGroup(group)
                                 } label: {
-                                    Label("重命名分组", systemImage: "pencil")
+                                    Label(text(.settingsRenameGroup), systemImage: "pencil")
                                 }
 
                                 Button(role: .destructive) {
                                     groupToDelete = group.id
                                     showDeleteGroupConfirm = true
                                 } label: {
-                                    Label("删除分组", systemImage: "trash")
+                                    Label(text(.settingsDeleteGroup), systemImage: "trash")
                                 }
                             }
                         }
@@ -311,11 +343,11 @@ struct SettingsView: View {
         .scrollIndicators(.hidden)
         .background(Color.clear)
         .confirmationDialog(
-            "删除分组？",
+            text(.settingsDeleteGroupTitle),
             isPresented: $showDeleteGroupConfirm,
             titleVisibility: .visible
         ) {
-            Button("删除", role: .destructive) {
+            Button(text(.commonDelete), role: .destructive) {
                 if let id = groupToDelete {
                     store.deleteGroup(id: id)
                     if selectedSidebarSelection == .group(id) {
@@ -324,9 +356,9 @@ struct SettingsView: View {
                     syncSnippetSelectionToCurrentFilter()
                 }
             }
-            Button("取消", role: .cancel) {}
+            Button(text(.commonCancel), role: .cancel) {}
         } message: {
-            Text("删除后，这个分组中的Key会保留为未分组状态，此操作无法撤销。")
+            Text(text(.settingsDeleteGroupMessage))
         }
     }
 
@@ -355,10 +387,10 @@ struct SettingsView: View {
                 Spacer(minLength: 16)
 
                 Button(action: addSnippet) {
-                    Label("新建Key", systemImage: "plus")
+                    Label(text(.settingsNewKey), systemImage: "plus")
                 }
                 .buttonStyle(PrimaryActionButtonStyle())
-                .help("新建Key (⌘N)")
+                .help(text(.settingsNewKeyHelp))
                 .keyboardShortcut("n", modifiers: .command)
                 .onboardingTarget(.createKeyButton)
             }
@@ -367,7 +399,7 @@ struct SettingsView: View {
                 Image(systemName: "magnifyingglass")
                     .foregroundColor(.secondary)
 
-                TextField("搜索触发词或替换内容", text: $snippetSearchText)
+                TextField(text(.settingsSearchPlaceholder), text: $snippetSearchText)
                     .textFieldStyle(.plain)
 
                 if !snippetSearchText.isEmpty {
@@ -393,12 +425,12 @@ struct SettingsView: View {
 
             HStack(spacing: 10) {
                 Button(action: importSnippets) {
-                    Label("导入", systemImage: "square.and.arrow.down")
+                    Label(text(.commonImport), systemImage: "square.and.arrow.down")
                 }
                 .buttonStyle(.borderless)
 
                 Button(action: exportSnippets) {
-                    Label("导出", systemImage: "square.and.arrow.up")
+                    Label(text(.commonExport), systemImage: "square.and.arrow.up")
                 }
                 .buttonStyle(.borderless)
                 .disabled(store.snippets.isEmpty && store.groups.isEmpty)
@@ -423,9 +455,9 @@ struct SettingsView: View {
                     Image(systemName: snippetSearchText.isEmpty ? "tray" : "magnifyingglass")
                         .font(.system(size: 28))
                         .foregroundColor(.secondary)
-                    Text(snippetSearchText.isEmpty ? "这里还没有 Key" : "没有匹配的 Key")
+                    Text(snippetSearchText.isEmpty ? text(.settingsNoKeyEmptyTitle) : text(.settingsNoSearchResultTitle))
                         .font(.headline)
-                    Text(snippetSearchText.isEmpty ? "点击右上角“新建Key”开始添加。" : "试试其他关键词，或清空搜索。")
+                    Text(snippetSearchText.isEmpty ? text(.settingsNoKeyEmptySubtitle) : text(.settingsNoSearchResultSubtitle))
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
@@ -449,7 +481,7 @@ struct SettingsView: View {
                                     snippetToDelete = snippet.id
                                     showDeleteSnippetConfirm = true
                                 } label: {
-                                    Label("删除Key", systemImage: "trash")
+                                    Label(text(.settingsDeleteKey), systemImage: "trash")
                                 }
                             }
                         }
@@ -460,11 +492,11 @@ struct SettingsView: View {
                 .scrollContentBackground(.hidden)
                     .background(browserColumnBackground)
                 .confirmationDialog(
-                    "删除Key？",
+                    text(.settingsDeleteKeyTitle),
                     isPresented: $showDeleteSnippetConfirm,
                     titleVisibility: .visible
                 ) {
-                    Button("删除", role: .destructive) {
+                    Button(text(.commonDelete), role: .destructive) {
                         if let id = snippetToDelete {
                             if let snippet = store.snippets.first(where: { $0.id == id }) {
                                 clipboardHistoryStore.clearCreatedSnippetAssociation(
@@ -478,9 +510,9 @@ struct SettingsView: View {
                             }
                         }
                     }
-                    Button("取消", role: .cancel) {}
+                    Button(text(.commonCancel), role: .cancel) {}
                 } message: {
-                    Text("这个Key将被永久删除。")
+                    Text(text(.settingsDeleteKeyMessage))
                 }
             }
         }
@@ -501,10 +533,10 @@ struct SettingsView: View {
                 Image(systemName: "square.and.pencil")
                     .font(.system(size: 32))
                     .foregroundColor(.secondary)
-                Text("请选择一个 Key 进行编辑")
+                Text(text(.settingsSelectKeyTitle))
                     .font(.title3)
                     .foregroundColor(.secondary)
-                Text("左侧可以按分组浏览，中间可以搜索和选择。")
+                Text(text(.settingsSelectKeySubtitle))
                     .font(.caption)
                     .foregroundColor(.secondary.opacity(0.7))
             }
@@ -528,7 +560,7 @@ struct SettingsView: View {
                 Spacer(minLength: 16)
 
                 if hasUnsavedReplacementChanges {
-                    Text("未保存")
+                    Text(text(.settingsUnsavedBadge))
                         .font(.caption)
                         .fontWeight(.medium)
                         .foregroundColor(.orange)
@@ -542,12 +574,12 @@ struct SettingsView: View {
             }
 
             HStack(spacing: 10) {
-                Button("还原") {
+                Button(text(.commonRestore)) {
                     restoreSelectedSnippet()
                 }
                 .buttonStyle(SecondaryActionButtonStyle())
 
-                Button("保存") {
+                Button(text(.commonSave)) {
                     saveEditing()
                 }
                 .keyboardShortcut("s", modifiers: .command)
@@ -563,7 +595,7 @@ struct SettingsView: View {
                     HStack(spacing: 6) {
                         Image(systemName: "trash")
                             .foregroundColor(.red)
-                        Text("删除")
+                        Text(text(.commonDelete))
                             .foregroundColor(.red)
                     }
                 }
@@ -636,30 +668,30 @@ struct SettingsView: View {
         [
             SettingsOnboardingStep(
                 target: .createKeyButton,
-                title: "先从这里创建 Key",
-                message: "每一条常用文本都从左上角的“新建Key”开始。看完这套指引后，第一步就是先点它。",
-                footnote: "你可以直接点击高亮的“新建Key”，系统会自动进入下一步；如果暂时不想建，也可以先看后面的说明。",
+                title: text(.settingsOnboardingStepCreateTitle),
+                message: text(.settingsOnboardingStepCreateMessage),
+                footnote: text(.settingsOnboardingStepCreateFootnote),
                 requiresDetailPreview: false
             ),
             SettingsOnboardingStep(
                 target: .triggerSection,
-                title: "这里填写触发词",
-                message: "触发词只填关键词本身，不需要带 #。真正使用时，在别的应用里输入 #email_key 这样的形式即可。",
-                footnote: "触发词只支持字母、数字和下划线，并且不能和现有 Key 重复。",
+                title: text(.settingsOnboardingStepTriggerTitle),
+                message: text(.settingsOnboardingStepTriggerMessage),
+                footnote: text(.settingsOnboardingStepTriggerFootnote),
                 requiresDetailPreview: true
             ),
             SettingsOnboardingStep(
                 target: .replacementSection,
-                title: "这里写最终展开的内容",
-                message: "可以写多行文本、签名、地址、模板回复。内容较长时，点右上角“在窗口中编辑”会更舒服。",
-                footnote: "修改替换内容后会显示“未保存”，按 ⌘S 或底部“保存”即可生效。",
+                title: text(.settingsOnboardingStepReplacementTitle),
+                message: text(.settingsOnboardingStepReplacementMessage),
+                footnote: text(.settingsOnboardingStepReplacementFootnote),
                 requiresDetailPreview: true
             ),
             SettingsOnboardingStep(
                 target: .groupSection,
-                title: "用分组整理你的 Key",
-                message: "把同类 Key 放进同一分组，左侧列表就能按分组筛选。Key 变多以后，这里会很有用。",
-                footnote: "看完后就可以回到左上角，创建并保存你的第一条 Key。",
+                title: text(.settingsOnboardingStepGroupTitle),
+                message: text(.settingsOnboardingStepGroupMessage),
+                footnote: text(.settingsOnboardingStepGroupFootnote),
                 requiresDetailPreview: true
             )
         ]
@@ -684,17 +716,17 @@ struct SettingsView: View {
     }
 
     private var currentScopeTitle: String {
-        selectedExistingGroup?.name ?? "全部Key"
+        selectedExistingGroup?.name ?? text(.settingsAllKeys)
     }
 
     private var currentScopeSubtitle: String {
-        var parts = ["\(filteredSnippets.count) 个结果"]
+        var parts = [formatted(.settingsResultCountFormat, filteredSnippets.count)]
         if !snippetSearchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            parts.append("搜索“\(snippetSearchText)”")
+            parts.append(formatted(.settingsSearchPartFormat, snippetSearchText))
         } else if selectedExistingGroup != nil {
-            parts.append("当前分组")
+            parts.append(text(.settingsCurrentGroup))
         } else {
-            parts.append("所有可用的文本展开")
+            parts.append(text(.settingsAllTextExpansions))
         }
 
         return parts.joined(separator: " · ")
@@ -704,29 +736,29 @@ struct SettingsView: View {
         if let selectedSnippet {
             return "#\(selectedSnippet.trigger)"
         }
-        return "Key 详情"
+        return text(.settingsKeyDetails)
     }
 
     private var detailSubtitle: String {
         guard let selectedSnippet else {
-            return "配置触发词、替换内容和分组。"
+            return text(.settingsDetailEmptySubtitle)
         }
 
         var parts: [String] = []
         if let groupName = groupName(for: selectedSnippet.groupId) {
             parts.append(groupName)
         } else {
-            parts.append("未分组")
+            parts.append(text(.settingsUngrouped))
         }
-        parts.append("已接受 \(selectedSnippet.acceptanceCount) 次")
+        parts.append(formatted(.settingsAcceptedTimesFormat, selectedSnippet.acceptanceCount))
         return parts.joined(separator: " · ")
     }
 
     private var clipboardStatusText: String {
         if clipboardHistoryStore.settings.isMonitoringEnabled {
-            return "剪贴板记录 \(clipboardHistoryStore.records.count) 条 · 阈值 \(clipboardHistoryStore.settings.suggestionThreshold) 次"
+            return formatted(.settingsClipboardStatusEnabledFormat, clipboardHistoryStore.records.count, clipboardHistoryStore.settings.suggestionThreshold)
         }
-        return "剪贴板记录已关闭"
+        return text(.settingsClipboardStatusDisabled)
     }
 
     private var hasUnsavedReplacementChanges: Bool {
@@ -742,13 +774,13 @@ struct SettingsView: View {
     private var triggerHelperText: String {
         switch triggerValidationError {
         case .empty:
-            return "触发词不能为空。"
+            return text(.settingsTriggerEmpty)
         case .invalidCharacters:
-            return "只允许字母、数字和下划线。"
+            return text(.settingsTriggerInvalid)
         case .duplicate:
-            return "这个触发词已经存在，请换一个。"
+            return text(.settingsTriggerDuplicate)
         case nil:
-            return "只允许字母、数字和下划线，且必须唯一。"
+            return text(.settingsTriggerHelp)
         }
     }
 
@@ -911,7 +943,7 @@ struct SettingsView: View {
 
             VStack(alignment: .trailing, spacing: 6) {
                 if snippet.acceptanceCount > 0 {
-                    Text("\(snippet.acceptanceCount) 次")
+                    Text(formatted(.clipboardTimesFormat, snippet.acceptanceCount))
                         .font(.caption2)
                         .foregroundColor(isSelected ? .accentColor : .secondary)
                 }
@@ -949,7 +981,7 @@ struct SettingsView: View {
 
     private var triggerSection: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("触发词")
+            Text(text(.settingsTriggerTitle))
                 .font(.caption2)
                 .foregroundColor(.secondary)
 
@@ -958,7 +990,7 @@ struct SettingsView: View {
                     .font(.system(size: 20, weight: .semibold, design: .monospaced))
                     .foregroundColor(.accentColor)
 
-                TextField("例如：email_key", text: $editingTrigger)
+                TextField(text(.settingsTriggerPlaceholder), text: $editingTrigger)
                     .font(.system(size: 20, weight: .semibold, design: .monospaced))
                     .textFieldStyle(.plain)
             }
@@ -987,13 +1019,13 @@ struct SettingsView: View {
     private var replacementSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             detailSectionHeader(
-                title: "替换内容",
-                subtitle: "接受 Key 后会插入这里的文本。"
+                title: text(.settingsReplacementTitle),
+                subtitle: text(.settingsReplacementSubtitle)
             ) {
                 Button {
                     openReplacementEditor()
                 } label: {
-                    Label("在窗口中编辑", systemImage: "square.and.pencil")
+                    Label(text(.settingsEditInWindow), systemImage: "square.and.pencil")
                 }
                 .buttonStyle(SecondaryActionButtonStyle())
             }
@@ -1012,7 +1044,7 @@ struct SettingsView: View {
 
     private var groupSection: some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text("分组")
+            Text(text(.settingsGroupTitle))
                 .font(.caption2)
                 .foregroundColor(.secondary)
 
@@ -1021,9 +1053,9 @@ struct SettingsView: View {
                     editingGroupId = nil
                 } label: {
                     if editingGroupId == nil {
-                        Label("无", systemImage: "checkmark")
+                        Label(text(.commonNone), systemImage: "checkmark")
                     } else {
-                        Text("无")
+                        Text(text(.commonNone))
                     }
                 }
 
@@ -1043,7 +1075,7 @@ struct SettingsView: View {
                 }
             } label: {
                 HStack(spacing: 10) {
-                    Text(groupName(for: editingGroupId) ?? "无")
+                    Text(groupName(for: editingGroupId) ?? text(.commonNone))
                         .foregroundColor(.primary)
 
                     Spacer(minLength: 10)
@@ -1065,8 +1097,8 @@ struct SettingsView: View {
     private var variablesSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             detailSectionHeader(
-                title: "变量",
-                subtitle: "可以在替换内容中使用的动态变量。"
+                title: text(.settingsVariablesTitle),
+                subtitle: text(.settingsVariablesSubtitle)
             ) {
                 EmptyView()
             }
@@ -1076,10 +1108,10 @@ struct SettingsView: View {
                 alignment: .leading,
                 spacing: 6
             ) {
-                variableTag("{date}", description: "当前日期")
-                variableTag("{time}", description: "当前时间")
-                variableTag("{clipboard}", description: "剪贴板文本")
-                variableTag("{cursor}", description: "光标位置")
+                variableTag("{date}", description: text(.settingsVariableCurrentDate))
+                variableTag("{time}", description: text(.settingsVariableCurrentTime))
+                variableTag("{clipboard}", description: text(.settingsVariableClipboardText))
+                variableTag("{cursor}", description: text(.settingsVariableCursorPosition))
             }
         }
         .padding(12)
@@ -1092,16 +1124,16 @@ struct SettingsView: View {
                 snippetToDelete = selectedSnippetId
                 showDeleteSnippetConfirm = true
             } label: {
-                Label("删除", systemImage: "trash")
+                Label(text(.commonDelete), systemImage: "trash")
             }
 
             Spacer()
 
-            Button("还原") {
+            Button(text(.commonRestore)) {
                 restoreSelectedSnippet()
             }
 
-            Button("保存") { saveEditing() }
+            Button(text(.commonSave)) { saveEditing() }
                 .keyboardShortcut("s", modifiers: .command)
                 .buttonStyle(.borderedProminent)
                 .disabled(!hasUnsavedReplacementChanges)
@@ -1170,15 +1202,15 @@ struct SettingsView: View {
 
     private func renameGroup(_ group: SnippetGroup) {
         let alert = NSAlert()
-        alert.messageText = "重命名分组"
-        alert.informativeText = "请输入新的分组名称。"
+        alert.messageText = text(.settingsRenameGroupTitle)
+        alert.informativeText = text(.settingsRenameGroupMessage)
 
         let textField = NSTextField(string: group.name)
-        textField.placeholderString = "分组名称"
+        textField.placeholderString = text(.settingsGroupNamePlaceholder)
         textField.frame = NSRect(x: 0, y: 0, width: 260, height: 24)
         alert.accessoryView = textField
-        alert.addButton(withTitle: "重命名")
-        alert.addButton(withTitle: "取消")
+        alert.addButton(withTitle: text(.settingsRenameGroup))
+        alert.addButton(withTitle: text(.commonCancel))
 
         guard alert.runModal() == .alertFirstButtonReturn else { return }
 
@@ -1221,7 +1253,7 @@ struct SettingsView: View {
         case .createSnippet:
             let snippet = Snippet(
                 trigger: store.nextAvailableTrigger(),
-                replacement: "替换文本",
+                replacement: text(.settingsDefaultReplacement),
                 groupId: currentSidebarSelection.groupId
             )
             guard store.addSnippet(snippet) else { return }
@@ -1341,7 +1373,7 @@ struct SettingsView: View {
     }
 
     private func addGroup() {
-        let group = SnippetGroup(name: "新分组")
+        let group = SnippetGroup(name: text(.settingsDefaultGroupName))
         store.addGroup(group)
     }
 
@@ -1358,8 +1390,8 @@ struct SettingsView: View {
         let panel = NSSavePanel()
         panel.allowedContentTypes = [.json]
         panel.nameFieldStringValue = "snipkey-snippets.json"
-        panel.title = "导出Key"
-        panel.prompt = "导出"
+        panel.title = text(.settingsExportPanelTitle)
+        panel.prompt = text(.commonExport)
         if panel.runModal() == .OK, let url = panel.url {
             try? store.exportData(to: url)
         }
@@ -1368,9 +1400,9 @@ struct SettingsView: View {
     private func importSnippets() {
         let panel = NSOpenPanel()
         panel.allowedContentTypes = [.json]
-        panel.title = "导入Key"
-        panel.prompt = "导入"
-        panel.message = "请选择要导入的 SnipKey Key文件。"
+        panel.title = text(.settingsImportPanelTitle)
+        panel.prompt = text(.commonImport)
+        panel.message = text(.settingsImportPanelMessage)
         if panel.runModal() == .OK, let url = panel.url {
             try? store.importData(from: url)
         }
@@ -1404,6 +1436,17 @@ private struct SettingsOnboardingFramePreferenceKey: PreferenceKey {
     }
 }
 
+private struct SettingsOnboardingCoachCardSizePreferenceKey: PreferenceKey {
+    static var defaultValue: CGSize = .zero
+
+    static func reduce(value: inout CGSize, nextValue: () -> CGSize) {
+        let nextSize = nextValue()
+        if nextSize != .zero {
+            value = nextSize
+        }
+    }
+}
+
 private struct SettingsOnboardingTargetModifier: ViewModifier {
     let target: SettingsOnboardingTarget
 
@@ -1425,9 +1468,12 @@ private struct SettingsOnboardingOverlay: View {
     let stepIndex: Int
     let stepCount: Int
     let targetAnchor: Anchor<CGRect>?
+    @ObservedObject var languageStore: AppLanguageStore
     let onClose: () -> Void
     let onPrevious: () -> Void
     let onNext: () -> Void
+
+    @State private var coachCardSize: CGSize = .zero
 
     var body: some View {
         GeometryReader { proxy in
@@ -1459,9 +1505,21 @@ private struct SettingsOnboardingOverlay: View {
                 SettingsOnboardingHitMaskView(passThroughRect: focusRect)
 
                 coachMarkCard(layout: coachLayout)
+                    .background(
+                        GeometryReader { cardProxy in
+                            Color.clear.preference(
+                                key: SettingsOnboardingCoachCardSizePreferenceKey.self,
+                                value: cardProxy.size
+                            )
+                        }
+                    )
                     .offset(x: coachLayout.origin.x, y: coachLayout.origin.y)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        }
+        .onPreferenceChange(SettingsOnboardingCoachCardSizePreferenceKey.self) { newSize in
+            guard newSize != .zero, newSize != coachCardSize else { return }
+            coachCardSize = newSize
         }
         .transition(.opacity)
     }
@@ -1488,7 +1546,7 @@ private struct SettingsOnboardingOverlay: View {
         VStack(alignment: .leading, spacing: 14) {
             HStack(alignment: .top, spacing: 12) {
                 VStack(alignment: .leading, spacing: 6) {
-                    Text("使用指引")
+                    Text(languageStore.text(.settingsOnboardingGuideTitle))
                         .font(.caption)
                         .foregroundColor(.secondary)
 
@@ -1524,22 +1582,22 @@ private struct SettingsOnboardingOverlay: View {
             }
 
             if targetAnchor == nil {
-                Text("正在定位当前控件…")
+                Text(languageStore.text(.settingsLocatingControl))
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
 
             HStack(spacing: 10) {
-                Button("稍后再看", action: onClose)
+                Button(languageStore.text(.settingsWatchLater), action: onClose)
                     .buttonStyle(.borderless)
 
                 Spacer()
 
-                Button("上一步", action: onPrevious)
+                Button(languageStore.text(.settingsPrevious), action: onPrevious)
                     .buttonStyle(.bordered)
                     .disabled(stepIndex == 0)
 
-                Button(stepIndex == stepCount - 1 ? "完成" : "下一步", action: onNext)
+                Button(stepIndex == stepCount - 1 ? languageStore.text(.settingsFinish) : languageStore.text(.settingsNext), action: onNext)
                     .buttonStyle(.borderedProminent)
             }
         }
@@ -1577,24 +1635,62 @@ private struct SettingsOnboardingOverlay: View {
 
     private func coachLayout(in size: CGSize, focusRect: CGRect?) -> SettingsOnboardingCoachLayout {
         let horizontalInset: CGFloat = 24
+        let verticalInset: CGFloat = 24
+        let targetGap: CGFloat = 16
         let bubbleWidth = min(360, max(300, size.width - horizontalInset * 2))
-        let estimatedHeight: CGFloat = step.target == .replacementSection ? 230 : 206
+        let fallbackHeight: CGFloat = step.target == .replacementSection ? 304 : 236
+        let cardHeight = coachCardSize.height > 0 ? coachCardSize.height : fallbackHeight
+        let maxY = max(verticalInset, size.height - cardHeight - verticalInset)
 
         guard let focusRect else {
             return SettingsOnboardingCoachLayout(
-                origin: CGPoint(x: max(horizontalInset, (size.width - bubbleWidth) / 2), y: max(horizontalInset, size.height - estimatedHeight - 24)),
+                origin: CGPoint(
+                    x: max(horizontalInset, (size.width - bubbleWidth) / 2),
+                    y: clamped(size.height - cardHeight - verticalInset, min: verticalInset, max: maxY)
+                ),
                 width: bubbleWidth,
                 arrowOffset: bubbleWidth / 2,
                 arrowDirection: .up
             )
         }
 
+        let verticalLayout = verticalCoachLayout(
+            size: size,
+            focusRect: focusRect,
+            bubbleWidth: bubbleWidth,
+            cardHeight: cardHeight,
+            horizontalInset: horizontalInset,
+            verticalInset: verticalInset,
+            targetGap: targetGap,
+            maxY: maxY
+        )
+
+        if let verticalLayout {
+            return verticalLayout
+        }
+
+        let sideLayout = sideCoachLayout(
+            size: size,
+            focusRect: focusRect,
+            bubbleWidth: bubbleWidth,
+            cardHeight: cardHeight,
+            horizontalInset: horizontalInset,
+            verticalInset: verticalInset,
+            targetGap: targetGap,
+            maxY: maxY
+        )
+
+        if let sideLayout {
+            return sideLayout
+        }
+
         let x = clamped(focusRect.midX - bubbleWidth / 2, min: horizontalInset, max: max(horizontalInset, size.width - bubbleWidth - horizontalInset))
-        let spaceBelow = size.height - focusRect.maxY - horizontalInset
-        let placeBelow = spaceBelow >= estimatedHeight + 18 || focusRect.minY < estimatedHeight + 36
+        let availableBelow = size.height - focusRect.maxY - verticalInset
+        let availableAbove = focusRect.minY - verticalInset
+        let placeBelow = availableBelow >= availableAbove
         let y = placeBelow
-            ? clamped(focusRect.maxY + 16, min: horizontalInset, max: max(horizontalInset, size.height - estimatedHeight - 24))
-            : clamped(focusRect.minY - estimatedHeight - 16, min: horizontalInset, max: max(horizontalInset, size.height - estimatedHeight - 24))
+            ? clamped(focusRect.maxY + targetGap, min: verticalInset, max: maxY)
+            : clamped(focusRect.minY - cardHeight - targetGap, min: verticalInset, max: maxY)
         let arrowOffset = clamped(focusRect.midX - x, min: 32, max: bubbleWidth - 32)
 
         return SettingsOnboardingCoachLayout(
@@ -1605,6 +1701,77 @@ private struct SettingsOnboardingOverlay: View {
         )
     }
 
+    private func verticalCoachLayout(
+        size: CGSize,
+        focusRect: CGRect,
+        bubbleWidth: CGFloat,
+        cardHeight: CGFloat,
+        horizontalInset: CGFloat,
+        verticalInset: CGFloat,
+        targetGap: CGFloat,
+        maxY: CGFloat
+    ) -> SettingsOnboardingCoachLayout? {
+        let x = clamped(focusRect.midX - bubbleWidth / 2, min: horizontalInset, max: max(horizontalInset, size.width - bubbleWidth - horizontalInset))
+        let arrowOffset = clamped(focusRect.midX - x, min: 32, max: bubbleWidth - 32)
+        let availableBelow = size.height - focusRect.maxY - verticalInset
+        let availableAbove = focusRect.minY - verticalInset
+
+        if availableBelow >= cardHeight + targetGap {
+            return SettingsOnboardingCoachLayout(
+                origin: CGPoint(x: x, y: focusRect.maxY + targetGap),
+                width: bubbleWidth,
+                arrowOffset: arrowOffset,
+                arrowDirection: .up
+            )
+        }
+
+        if availableAbove >= cardHeight + targetGap {
+            return SettingsOnboardingCoachLayout(
+                origin: CGPoint(x: x, y: clamped(focusRect.minY - cardHeight - targetGap, min: verticalInset, max: maxY)),
+                width: bubbleWidth,
+                arrowOffset: arrowOffset,
+                arrowDirection: .down
+            )
+        }
+
+        return nil
+    }
+
+    private func sideCoachLayout(
+        size: CGSize,
+        focusRect: CGRect,
+        bubbleWidth: CGFloat,
+        cardHeight: CGFloat,
+        horizontalInset: CGFloat,
+        verticalInset: CGFloat,
+        targetGap: CGFloat,
+        maxY: CGFloat
+    ) -> SettingsOnboardingCoachLayout? {
+        let availableLeading = focusRect.minX - horizontalInset
+        let availableTrailing = size.width - focusRect.maxX - horizontalInset
+        let y = clamped(focusRect.midY - cardHeight / 2, min: verticalInset, max: maxY)
+
+        if availableLeading >= bubbleWidth + targetGap {
+            return SettingsOnboardingCoachLayout(
+                origin: CGPoint(x: focusRect.minX - bubbleWidth - targetGap, y: y),
+                width: bubbleWidth,
+                arrowOffset: bubbleWidth / 2,
+                arrowDirection: .none
+            )
+        }
+
+        if availableTrailing >= bubbleWidth + targetGap {
+            return SettingsOnboardingCoachLayout(
+                origin: CGPoint(x: focusRect.maxX + targetGap, y: y),
+                width: bubbleWidth,
+                arrowOffset: bubbleWidth / 2,
+                arrowDirection: .none
+            )
+        }
+
+        return nil
+    }
+
     private func clamped(_ value: CGFloat, min lowerBound: CGFloat, max upperBound: CGFloat) -> CGFloat {
         Swift.max(lowerBound, Swift.min(value, upperBound))
     }
@@ -1613,6 +1780,7 @@ private struct SettingsOnboardingOverlay: View {
 private enum SettingsOnboardingArrowDirection {
     case up
     case down
+    case none
 }
 
 private struct SettingsOnboardingCoachLayout {
@@ -1636,6 +1804,8 @@ private struct SettingsOnboardingArrow: Shape {
             path.move(to: CGPoint(x: rect.minX, y: rect.minY))
             path.addLine(to: CGPoint(x: rect.maxX, y: rect.minY))
             path.addLine(to: CGPoint(x: rect.midX, y: rect.maxY))
+        case .none:
+            return path
         }
         path.closeSubpath()
         return path
@@ -1669,6 +1839,7 @@ private struct ReplacementEditorSheet: View {
     let trigger: String
     let originalText: String
     @Binding var text: String
+    @ObservedObject var languageStore: AppLanguageStore
     let onCancel: () -> Void
     let onApply: () -> Void
 
@@ -1678,21 +1849,21 @@ private struct ReplacementEditorSheet: View {
         VStack(spacing: 0) {
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("编辑替换内容")
+                    Text(languageStore.text(.replacementEditorTitle))
                         .font(.title2)
                         .fontWeight(.semibold)
 
-                    Text("正在编辑 #\(trigger.isEmpty ? "Key" : trigger)")
+                    Text(languageStore.formatted(.replacementEditorEditingFormat, trigger.isEmpty ? "Key" : trigger))
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                 }
 
                 Spacer()
 
-                Button("取消", action: handleCancel)
+                Button(languageStore.text(.commonCancel), action: handleCancel)
                     .buttonStyle(SecondaryActionButtonStyle())
 
-                Button("应用", action: onApply)
+                Button(languageStore.text(.commonApply), action: onApply)
                     .buttonStyle(PrimaryActionButtonStyle())
                     .keyboardShortcut(.defaultAction)
             }
@@ -1710,21 +1881,21 @@ private struct ReplacementEditorSheet: View {
         .frame(minWidth: 760, minHeight: 560)
         .background(Color(nsColor: .windowBackgroundColor))
         .confirmationDialog(
-            "替换内容尚未应用",
+            languageStore.text(.replacementUnsavedTitle),
             isPresented: $showCancelConfirmation,
             titleVisibility: .visible
         ) {
-            Button("应用更改") {
+            Button(languageStore.text(.replacementApplyChanges)) {
                 onApply()
             }
 
-            Button("放弃更改", role: .destructive) {
+            Button(languageStore.text(.replacementDiscardChanges), role: .destructive) {
                 onCancel()
             }
 
-            Button("继续编辑", role: .cancel) {}
+            Button(languageStore.text(.replacementContinueEditing), role: .cancel) {}
         } message: {
-            Text("你修改了替换内容。关闭窗口前，是否要应用这些更改？")
+            Text(languageStore.text(.replacementUnsavedMessage))
         }
     }
 

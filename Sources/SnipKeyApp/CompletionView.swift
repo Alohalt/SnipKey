@@ -17,15 +17,16 @@ struct CompletionView: View {
     let snippets: [Snippet]
     let selectedIndex: Int
     let shouldAutoScrollSelection: Bool
+    @ObservedObject var languageStore: AppLanguageStore
     let onHoverSelection: (Int) -> Void
     let onConfirmSelection: (Int) -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            CompletionHeader(snippetCount: snippets.count)
+            CompletionHeader(snippetCount: snippets.count, languageStore: languageStore)
 
             if snippets.isEmpty {
-                Text("无匹配结果")
+                Text(languageStore.text(.completionNoMatches))
                     .font(.body)
                     .foregroundStyle(.secondary)
                     .padding(.horizontal, 12)
@@ -38,6 +39,7 @@ struct CompletionView: View {
                                 CompletionRow(
                                     snippet: snippet,
                                     isSelected: index == selectedIndex,
+                                    languageStore: languageStore,
                                     onHover: { isHovering in
                                         guard isHovering else { return }
                                         onHoverSelection(index)
@@ -107,14 +109,15 @@ struct CompletionView: View {
 
 private struct CompletionHeader: View {
     let snippetCount: Int
+    @ObservedObject var languageStore: AppLanguageStore
 
     var body: some View {
         HStack(alignment: .center, spacing: 12) {
             VStack(alignment: .leading, spacing: 4) {
-                Text("候选片段")
+                Text(languageStore.text(.completionHeaderTitle))
                     .font(.headline)
 
-                Label("点击或回车插入", systemImage: "cursorarrow.click.2")
+                Label(languageStore.text(.completionHeaderInstruction), systemImage: "cursorarrow.click.2")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }
@@ -131,7 +134,7 @@ private struct CompletionHeader: View {
                     Capsule()
                         .fill(Color.accentColor.opacity(0.12))
                 )
-                .accessibilityLabel("共 \(snippetCount) 条候选")
+                .accessibilityLabel(languageStore.formatted(.completionCandidateAccessibilityCountFormat, snippetCount))
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 10)
@@ -151,6 +154,7 @@ private struct CompletionRow: View {
 
     let snippet: Snippet
     let isSelected: Bool
+    @ObservedObject var languageStore: AppLanguageStore
     let onHover: (Bool) -> Void
     let onConfirm: () -> Void
 
@@ -223,7 +227,7 @@ private struct CompletionRow: View {
         .contentShape(RoundedRectangle(cornerRadius: CompletionPanelMetrics.rowCornerRadius))
         .onHover(perform: onHover)
         .accessibilityLabel(accessibilityText)
-        .accessibilityHint("点击即可插入这个片段")
+        .accessibilityHint(languageStore.text(.completionRowAccessibilityHint))
     }
 
     private var replacementPreview: String {
@@ -237,6 +241,6 @@ private struct CompletionRow: View {
     }
 
     private var accessibilityText: String {
-        "触发词 #\(snippet.trigger)，内容 \(replacementPreview)"
+        languageStore.formatted(.completionRowAccessibilityLabelFormat, snippet.trigger, replacementPreview)
     }
 }

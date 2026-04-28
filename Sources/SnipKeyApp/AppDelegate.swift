@@ -6,19 +6,20 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private let hasShownOnboardingGuideKey = "SnipKey.hasShownOnboardingGuide"
     private let store = SnippetStore()
     private let clipboardHistoryStore = ClipboardHistoryStore()
+    private let languageStore = AppLanguageStore()
     private let engine = SnippetEngine()
     private let keyboardMonitor = KeyboardMonitor()
     private lazy var clipboardMonitor = ClipboardMonitor(historyStore: clipboardHistoryStore)
     private let textReplacer = TextReplacer()
     private lazy var completionPanel: CompletionPanel = {
-        let panel = CompletionPanel()
+        let panel = CompletionPanel(languageStore: languageStore)
         panel.onConfirmSelection = { [weak self] snippet in
             self?.confirmCompletionSelection(snippet)
         }
         return panel
     }()
     private let menuBarController = MenuBarController()
-    private lazy var settingsWindow = SettingsWindow(store: store, clipboardHistoryStore: clipboardHistoryStore)
+    private lazy var settingsWindow = SettingsWindow(store: store, clipboardHistoryStore: clipboardHistoryStore, languageStore: languageStore)
     private var cancellables = Set<AnyCancellable>()
 
     private var accessibilityCheckTimer: Timer?
@@ -52,6 +53,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             }
             .store(in: &cancellables)
 
+        observeLanguageChanges()
+
         // Setup keyboard monitor
         keyboardMonitor.delegate = self
         startKeyboardMonitorWithAccessibilityCheck()
@@ -66,7 +69,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         // Setup menu bar
         menuBarController.delegate = self
-        menuBarController.setup()
+        menuBarController.setup(language: languageStore.language)
 
         showOnboardingIfNeeded()
 
@@ -242,11 +245,11 @@ extension AppDelegate: MenuBarControllerDelegate {
 private extension AppDelegate {
     func presentClipboardSuggestion(for record: ClipboardRecord) {
         let alert = NSAlert()
-        alert.messageText = "这段内容已经复制 \(record.copyCount) 次，要新建成 Key 吗？"
-        alert.informativeText = "重复复制的内容很适合做成 Key，后续可以直接展开使用。\n\n\(clipboardPreview(for: record.content))"
+        alert.messageText = languageStore.formatted(.clipboardSuggestionTitleFormat, record.copyCount)
+        alert.informativeText = languageStore.formatted(.clipboardSuggestionMessageFormat, clipboardPreview(for: record.content))
         alert.alertStyle = .informational
-        alert.addButton(withTitle: "新建Key")
-        alert.addButton(withTitle: "稍后")
+        alert.addButton(withTitle: languageStore.text(.clipboardSuggestionCreateKey))
+        alert.addButton(withTitle: languageStore.text(.clipboardSuggestionLater))
 
         NSApp.activate(ignoringOtherApps: true)
         let response = alert.runModal()
@@ -275,6 +278,19 @@ private extension AppDelegate {
             .trimmingCharacters(in: .whitespacesAndNewlines)
         let preview = String(flattened.prefix(120))
         return flattened.count > preview.count ? preview + "…" : preview
+    }
+
+    func observeLanguageChanges() {
+        languageStore.$language
+            .dropFirst()
+            .receive(on: RunLoop.main)
+            .sink { [weak self] language in
+                guard let self else { return }
+                NSApp.mainMenu = AppMenuFactory.makeMainMenu(target: self, language: language)
+                self.menuBarController.updateLanguage(language)
+                self.completionPanel.updateLanguage()
+            }
+            .store(in: &cancellables)
     }
 
     func confirmCompletionSelection(_ snippet: Snippet) {

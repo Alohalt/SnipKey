@@ -56,19 +56,13 @@ class AccessibilityHelper {
 
     /// Show a user-friendly alert explaining how to grant permission
     private static func showAccessibilityAlert() {
+        let language = AppLanguage.current
         let alert = NSAlert()
-        alert.messageText = "需要键盘访问权限"
-        alert.informativeText = """
-            SnipKey 需要键盘相关权限，才能监听触发词并展开Key。
-
-            1. 打开“系统设置” → “隐私与安全性” → “辅助功能”
-            2. 勾选“SnipKey”（或你当前启动它的应用，例如 Xcode / Terminal）
-            3. 如果“输入监控”里也出现 SnipKey，请一并启用
-            4. 尽量从同一个应用路径启动 SnipKey，便于 macOS 稳定保留授权
-            """
+        alert.messageText = L10n.text(.accessibilityPermissionTitle, language: language)
+        alert.informativeText = L10n.text(.accessibilityPermissionMessage, language: language)
         alert.alertStyle = .warning
-        alert.addButton(withTitle: "打开系统设置")
-        alert.addButton(withTitle: "稍后")
+        alert.addButton(withTitle: L10n.text(.accessibilityOpenSettings, language: language))
+        alert.addButton(withTitle: L10n.text(.accessibilityLater, language: language))
 
         let response = alert.runModal()
         if response == .alertFirstButtonReturn {

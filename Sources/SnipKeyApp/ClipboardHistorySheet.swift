@@ -6,6 +6,7 @@ struct ClipboardHistorySheet: View {
     @Environment(\.dismiss) private var dismiss
 
     @ObservedObject var historyStore: ClipboardHistoryStore
+    @ObservedObject var languageStore: AppLanguageStore
     let onCreateSnippet: (ClipboardRecord) -> Void
 
     var body: some View {
@@ -61,7 +62,7 @@ struct ClipboardHistorySheet: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .top, spacing: 16) {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("剪贴板记录")
+                    Text(languageStore.text(.clipboardTitle))
                         .font(.system(size: 24, weight: .semibold, design: .rounded))
 
                     Text(headerSubtitle)
@@ -72,13 +73,13 @@ struct ClipboardHistorySheet: View {
                 Spacer(minLength: 16)
 
                 HStack(spacing: 8) {
-                    Button("清空记录", role: .destructive) {
+                    Button(languageStore.text(.clipboardClearRecords), role: .destructive) {
                         historyStore.clearHistory()
                     }
                     .buttonStyle(.bordered)
                     .disabled(historyStore.records.isEmpty)
 
-                    Button("关闭") {
+                    Button(languageStore.text(.commonClose)) {
                         dismiss()
                     }
                     .buttonStyle(.bordered)
@@ -107,7 +108,7 @@ struct ClipboardHistorySheet: View {
             HStack(spacing: 0) {
                 statusItem(
                     icon: "doc.text",
-                    title: "记录",
+                    title: languageStore.text(.clipboardRecordMetric),
                     value: "\(historyStore.records.count)",
                     tint: .primary
                 )
@@ -116,8 +117,8 @@ struct ClipboardHistorySheet: View {
 
                 statusItem(
                     icon: historyStore.settings.isMonitoringEnabled ? "checkmark.circle.fill" : "pause.circle.fill",
-                    title: "状态",
-                    value: historyStore.settings.isMonitoringEnabled ? "已开启" : "已关闭",
+                    title: languageStore.text(.clipboardStatusMetric),
+                    value: historyStore.settings.isMonitoringEnabled ? languageStore.text(.clipboardStatusOn) : languageStore.text(.clipboardStatusOff),
                     tint: historyStore.settings.isMonitoringEnabled ? .green : .secondary
                 )
 
@@ -125,8 +126,8 @@ struct ClipboardHistorySheet: View {
 
                 statusItem(
                     icon: "slider.horizontal.3",
-                    title: "阈值",
-                    value: "\(historyStore.settings.suggestionThreshold) 次",
+                    title: languageStore.text(.clipboardThresholdMetric),
+                    value: languageStore.formatted(.clipboardTimesFormat, historyStore.settings.suggestionThreshold),
                     tint: .accentColor
                 )
             }
@@ -138,8 +139,8 @@ struct ClipboardHistorySheet: View {
         ClipboardSheetCard {
             VStack(alignment: .leading, spacing: 10) {
                 sectionHeader(
-                    title: "建议设置",
-                    subtitle: "达到阈值时会提示你把重复复制的内容保存为 Key。"
+                    title: languageStore.text(.clipboardSuggestionSettingsTitle),
+                    subtitle: languageStore.text(.clipboardSuggestionSettingsSubtitle)
                 ) {
                     EmptyView()
                 }
@@ -148,11 +149,11 @@ struct ClipboardHistorySheet: View {
                     ClipboardSheetField {
                         HStack(alignment: .center, spacing: 12) {
                             VStack(alignment: .leading, spacing: 3) {
-                                Text("记录剪贴板文本")
+                                Text(languageStore.text(.clipboardMonitoringToggleTitle))
                                     .font(.body)
                                     .fontWeight(.medium)
 
-                                Text("关闭后不会新增历史记录，也不会弹出创建 Key 的建议。")
+                                Text(languageStore.text(.clipboardMonitoringToggleSubtitle))
                                     .font(.caption)
                                     .foregroundColor(.secondary)
                             }
@@ -167,18 +168,18 @@ struct ClipboardHistorySheet: View {
                     ClipboardSheetField {
                         HStack(alignment: .center, spacing: 12) {
                             VStack(alignment: .leading, spacing: 3) {
-                                Text("提示阈值")
+                                Text(languageStore.text(.clipboardThresholdTitle))
                                     .font(.body)
                                     .fontWeight(.medium)
 
-                                Text("同一段文本复制到 \(historyStore.settings.suggestionThreshold) 次时，询问是否创建新的 Key。")
+                                Text(languageStore.formatted(.clipboardThresholdDescriptionFormat, historyStore.settings.suggestionThreshold))
                                     .font(.caption)
                                     .foregroundColor(.secondary)
                             }
 
                             Spacer(minLength: 12)
 
-                            Text("\(historyStore.settings.suggestionThreshold) 次")
+                            Text(languageStore.formatted(.clipboardTimesFormat, historyStore.settings.suggestionThreshold))
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                                 .monospacedDigit()
@@ -195,7 +196,7 @@ struct ClipboardHistorySheet: View {
     private var historySection: some View {
         VStack(alignment: .leading, spacing: 10) {
             sectionHeader(
-                title: "最近复制",
+                title: languageStore.text(.clipboardRecentCopiesTitle),
                 subtitle: historySectionSubtitle
             ) {
                 EmptyView()
@@ -208,10 +209,10 @@ struct ClipboardHistorySheet: View {
                             .font(.system(size: 26))
                             .foregroundColor(.secondary)
 
-                        Text("还没有记录到可用的文本复制")
+                        Text(languageStore.text(.clipboardEmptyTitle))
                             .font(.headline)
 
-                        Text("复制几段常用文本后，这里会按最近时间显示历史记录，并支持一键新建 Key。")
+                        Text(languageStore.text(.clipboardEmptySubtitle))
                             .font(.caption)
                             .foregroundColor(.secondary)
                             .multilineTextAlignment(.center)
@@ -224,6 +225,7 @@ struct ClipboardHistorySheet: View {
                     ForEach(historyStore.records) { record in
                         ClipboardHistoryRow(
                             record: record,
+                            languageStore: languageStore,
                             onCreateSnippet: {
                                 onCreateSnippet(record)
                                 dismiss()
@@ -240,18 +242,18 @@ struct ClipboardHistorySheet: View {
 
     private var headerSubtitle: String {
         if historyStore.settings.isMonitoringEnabled {
-            return "按最近复制时间排序，最多保留最近 \(ClipboardHistoryStore.defaultMaxRecordCount) 条记录，达到设定次数后会提示创建 Key。"
+            return languageStore.formatted(.clipboardHeaderEnabledFormat, ClipboardHistoryStore.defaultMaxRecordCount)
         }
 
-        return "当前已暂停记录剪贴板文本。"
+        return languageStore.text(.clipboardHeaderPaused)
     }
 
     private var historySectionSubtitle: String {
         if historyStore.records.isEmpty {
-            return "还没有可用的复制记录。"
+            return languageStore.text(.clipboardHistoryEmptySubtitle)
         }
 
-        return "共 \(historyStore.records.count) 条记录，最近复制的内容会排在最前面，超出后会自动滚动清理旧记录。"
+        return languageStore.formatted(.clipboardHistoryCountSubtitleFormat, historyStore.records.count)
     }
 
     private var statusDivider: some View {
@@ -307,6 +309,7 @@ struct ClipboardHistorySheet: View {
 
 private struct ClipboardHistoryRow: View {
     let record: ClipboardRecord
+    @ObservedObject var languageStore: AppLanguageStore
     let onCreateSnippet: () -> Void
     let onDelete: () -> Void
 
@@ -328,14 +331,14 @@ private struct ClipboardHistoryRow: View {
 
                     if record.snippetCreatedAt != nil {
                         badge(
-                            title: "已建Key",
+                            title: languageStore.text(.clipboardCreatedKey),
                             systemImage: "checkmark.circle.fill",
                             tint: .green,
                             fill: Color.green.opacity(0.12)
                         )
                     } else {
                         badge(
-                            title: "已复制 \(record.copyCount) 次",
+                            title: languageStore.formatted(.clipboardCopiedTimesFormat, record.copyCount),
                             systemImage: nil,
                             tint: .accentColor,
                             fill: Color.accentColor.opacity(0.10)
@@ -352,13 +355,13 @@ private struct ClipboardHistoryRow: View {
                 }
 
                 HStack(spacing: 10) {
-                    Button("删除记录", role: .destructive, action: onDelete)
+                    Button(languageStore.text(.clipboardDeleteRecord), role: .destructive, action: onDelete)
                         .buttonStyle(.borderless)
 
                     Spacer()
 
                     Button(action: onCreateSnippet) {
-                        Label(record.snippetCreatedAt != nil ? "已建Key" : "新建Key", systemImage: record.snippetCreatedAt != nil ? "checkmark.circle.fill" : "plus")
+                        Label(record.snippetCreatedAt != nil ? languageStore.text(.clipboardCreatedKey) : languageStore.text(.clipboardNewKey), systemImage: record.snippetCreatedAt != nil ? "checkmark.circle.fill" : "plus")
                     }
                     .buttonStyle(ClipboardPrimaryButtonStyle())
                     .disabled(record.snippetCreatedAt != nil)
@@ -401,17 +404,17 @@ private struct ClipboardHistoryRow: View {
 
     private var lastCopiedDescription: String {
         let calendar = Calendar.current
-        let time = record.lastCopiedAt.formatted(date: .omitted, time: .shortened)
+        let time = record.lastCopiedAt.formatted(.dateTime.locale(languageStore.language.locale).hour().minute())
 
         if calendar.isDateInToday(record.lastCopiedAt) {
-            return "今天 \(time)"
+            return languageStore.formatted(.clipboardTodayFormat, time)
         }
 
         if calendar.isDateInYesterday(record.lastCopiedAt) {
-            return "昨天 \(time)"
+            return languageStore.formatted(.clipboardYesterdayFormat, time)
         }
 
-        return record.lastCopiedAt.formatted(date: .abbreviated, time: .shortened)
+        return record.lastCopiedAt.formatted(.dateTime.locale(languageStore.language.locale).month(.abbreviated).day().hour().minute())
     }
 }
 

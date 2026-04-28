@@ -14,39 +14,50 @@ class MenuBarController {
     private var statusItem: NSStatusItem?
     private var isEnabled = true
     private var toggleItem: NSMenuItem?
+    private var language: AppLanguage = .current
 
-    func setup() {
+    func setup(language: AppLanguage) {
+        self.language = language
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
 
         if let button = statusItem?.button {
             button.image = NSImage(systemSymbolName: "text.cursor", accessibilityDescription: "SnipKey")
         }
 
+        rebuildMenu()
+    }
+
+    func updateLanguage(_ language: AppLanguage) {
+        self.language = language
+        rebuildMenu()
+    }
+
+    private func rebuildMenu() {
         let menu = NSMenu()
 
-        let toggle = NSMenuItem(title: "启用", action: #selector(toggleEnabled(_:)), keyEquivalent: "")
+        let toggle = NSMenuItem(title: L10n.text(.menuEnable, language: language), action: #selector(toggleEnabled(_:)), keyEquivalent: "")
         toggle.target = self
-        toggle.state = .on
+        toggle.state = isEnabled ? .on : .off
         toggleItem = toggle
         menu.addItem(toggle)
 
         menu.addItem(.separator())
 
-        let permissionsItem = NSMenuItem(title: "授予权限…", action: #selector(openPermissions), keyEquivalent: "")
+        let permissionsItem = NSMenuItem(title: L10n.text(.menuGrantPermissionsEllipsis, language: language), action: #selector(openPermissions), keyEquivalent: "")
         permissionsItem.target = self
         menu.addItem(permissionsItem)
 
-        let settingsItem = NSMenuItem(title: "设置\u{2026}", action: #selector(openSettings), keyEquivalent: ",")
+        let settingsItem = NSMenuItem(title: L10n.text(.menuSettingsEllipsis, language: language), action: #selector(openSettings), keyEquivalent: ",")
         settingsItem.target = self
         menu.addItem(settingsItem)
 
-        let clipboardHistoryItem = NSMenuItem(title: "剪贴板记录\u{2026}", action: #selector(openClipboardHistory), keyEquivalent: "")
+        let clipboardHistoryItem = NSMenuItem(title: L10n.text(.menuClipboardHistoryEllipsis, language: language), action: #selector(openClipboardHistory), keyEquivalent: "")
         clipboardHistoryItem.target = self
         menu.addItem(clipboardHistoryItem)
 
         menu.addItem(.separator())
 
-        let quitItem = NSMenuItem(title: "退出 SnipKey", action: #selector(quit), keyEquivalent: "q")
+        let quitItem = NSMenuItem(title: L10n.text(.menuQuitSnipKey, language: language), action: #selector(quit), keyEquivalent: "q")
         quitItem.target = self
         menu.addItem(quitItem)
 

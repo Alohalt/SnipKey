@@ -3,6 +3,7 @@ import SwiftUI
 
 struct AboutSheet: View {
     @Environment(\.dismiss) private var dismiss
+    @ObservedObject var languageStore: AppLanguageStore
 
     private let developerDisplayName = "AlohaT"
     private let githubRepositoryDisplayName = "Alohalt/SnipKey"
@@ -46,24 +47,24 @@ struct AboutSheet: View {
         case let (_, buildVersion?) where !buildVersion.isEmpty:
             return "v\(buildVersion)"
         default:
-            return "未知版本"
+            return languageStore.text(.aboutUnknownVersion)
         }
     }
 
     private var header: some View {
         HStack(alignment: .top, spacing: 16) {
             VStack(alignment: .leading, spacing: 4) {
-                Text("关于 SnipKey")
+                Text(languageStore.text(.aboutTitle))
                     .font(.system(size: 24, weight: .semibold, design: .rounded))
 
-                Text("查看开发者信息、GitHub 仓库地址和反馈入口。")
+                Text(languageStore.text(.aboutSubtitle))
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
 
             Spacer(minLength: 16)
 
-            Button("关闭") {
+            Button(languageStore.text(.commonClose)) {
                 dismiss()
             }
             .buttonStyle(.bordered)
@@ -91,7 +92,7 @@ struct AboutSheet: View {
                     Text("SnipKey")
                         .font(.system(size: 20, weight: .semibold, design: .rounded))
 
-                    Text("面向 macOS 的菜单栏文本扩展工具，支持 Key 管理、补全面板和剪贴板建议。")
+                    Text(languageStore.text(.aboutSummary))
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
@@ -104,20 +105,20 @@ struct AboutSheet: View {
     private var detailsCard: some View {
         AboutCard {
             VStack(alignment: .leading, spacing: 12) {
-                aboutMetadataRow(title: "开发者", value: developerDisplayName)
+                aboutMetadataRow(title: languageStore.text(.aboutDeveloper), value: developerDisplayName)
                 aboutMetadataRow(title: "GitHub", value: githubRepositoryDisplayName)
-                aboutMetadataRow(title: "仓库地址", value: githubRepositoryURL.absoluteString)
-                aboutMetadataRow(title: "版本", value: appVersionText)
+                aboutMetadataRow(title: languageStore.text(.aboutRepositoryAddress), value: githubRepositoryURL.absoluteString)
+                aboutMetadataRow(title: languageStore.text(.aboutVersion), value: appVersionText)
 
                 HStack(spacing: 10) {
                     aboutActionLink(
-                        title: "仓库主页",
+                        title: languageStore.text(.aboutRepositoryHome),
                         systemImage: "link",
                         destination: githubRepositoryURL
                     )
 
                     aboutActionLink(
-                        title: "反馈问题",
+                        title: languageStore.text(.aboutReportIssue),
                         systemImage: "bubble.left.and.exclamationmark.bubble.right",
                         destination: githubIssuesURL
                     )

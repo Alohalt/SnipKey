@@ -7,11 +7,13 @@ class SettingsWindow {
     private var hostingController: NSHostingController<SettingsView>?
     private let store: SnippetStore
     private let clipboardHistoryStore: ClipboardHistoryStore
+    private let languageStore: AppLanguageStore
     private let coordinator = SettingsCoordinator()
 
-    init(store: SnippetStore, clipboardHistoryStore: ClipboardHistoryStore) {
+    init(store: SnippetStore, clipboardHistoryStore: ClipboardHistoryStore, languageStore: AppLanguageStore) {
         self.store = store
         self.clipboardHistoryStore = clipboardHistoryStore
+        self.languageStore = languageStore
     }
 
     func show(showOnboarding: Bool = false, selecting snippetId: UUID? = nil, showingClipboardHistory: Bool = false) {
@@ -69,6 +71,7 @@ class SettingsWindow {
         SettingsView(
             store: store,
             clipboardHistoryStore: clipboardHistoryStore,
+            languageStore: languageStore,
             coordinator: coordinator,
             initiallyShowsOnboarding: initiallyShowsOnboarding
         )

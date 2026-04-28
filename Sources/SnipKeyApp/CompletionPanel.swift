@@ -9,10 +9,15 @@ final class CompletionPanel {
     private var panel: CompletionFloatingPanel?
     private var hostingView: CompletionHostingView?
     private var shouldAutoScrollSelection = false
+    private let languageStore: AppLanguageStore
 
     private(set) var matchedSnippets: [Snippet] = []
     private(set) var selectedIndex: Int = 0
     var onConfirmSelection: ((Snippet) -> Void)?
+
+    init(languageStore: AppLanguageStore) {
+        self.languageStore = languageStore
+    }
 
     var selectedSnippet: Snippet? {
         guard !matchedSnippets.isEmpty, selectedIndex < matchedSnippets.count else { return nil }
@@ -86,6 +91,11 @@ final class CompletionPanel {
             panel?.setContentSize(hosting.fittingSize)
             hostingView = hosting
         }
+    }
+
+    func updateLanguage() {
+        guard isVisible else { return }
+        updateView()
     }
 
     func hide() {
@@ -170,6 +180,7 @@ final class CompletionPanel {
             snippets: matchedSnippets,
             selectedIndex: selectedIndex,
             shouldAutoScrollSelection: shouldAutoScrollSelection,
+            languageStore: languageStore,
             onHoverSelection: { [weak self] index in
                 self?.selectSnippet(at: index)
             },

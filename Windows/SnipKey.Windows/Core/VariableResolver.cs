@@ -40,7 +40,7 @@ public sealed class VariableResolver
     {
         try
         {
-            return Clipboard.ContainsText() ? Clipboard.GetText() : string.Empty;
+            return System.Windows.Clipboard.ContainsText() ? System.Windows.Clipboard.GetText() : string.Empty;
         }
         catch
         {

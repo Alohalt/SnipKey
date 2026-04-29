@@ -6,12 +6,21 @@ using System.Windows.Interop;
 using System.Windows.Media;
 using SnipKey.WinApp.Core;
 using SnipKey.WinApp.Platform;
+using WpfBinding = System.Windows.Data.Binding;
+using WpfBrushes = System.Windows.Media.Brushes;
+using WpfColor = System.Windows.Media.Color;
+using WpfControl = System.Windows.Controls.Control;
+using WpfFontFamily = System.Windows.Media.FontFamily;
+using WpfHorizontalAlignment = System.Windows.HorizontalAlignment;
+using WpfListBox = System.Windows.Controls.ListBox;
+using WpfMouseEventArgs = System.Windows.Input.MouseEventArgs;
+using WpfPoint = System.Windows.Point;
 
 namespace SnipKey.WinApp.UI;
 
 internal sealed class CompletionWindow : Window
 {
-    private readonly ListBox listBox = new();
+    private readonly WpfListBox listBox = new();
 
     public CompletionWindow()
     {
@@ -21,24 +30,24 @@ internal sealed class CompletionWindow : Window
         ShowActivated = false;
         Topmost = true;
         AllowsTransparency = true;
-        Background = Brushes.Transparent;
+        Background = WpfBrushes.Transparent;
         SizeToContent = SizeToContent.WidthAndHeight;
 
         listBox.Width = 380;
         listBox.MaxHeight = 320;
         listBox.BorderThickness = new Thickness(0);
-        listBox.Background = Brushes.Transparent;
+        listBox.Background = WpfBrushes.Transparent;
         listBox.ItemTemplate = BuildItemTemplate();
         listBox.ItemContainerStyle = BuildItemStyle();
         listBox.PreviewMouseMove += SelectItemUnderPointer;
-        listBox.PreviewMouseLeftButtonUp += (_, _) => ConfirmSelected();
+        listBox.PreviewMouseLeftButtonUp += ConfirmItemUnderPointer;
 
         Content = new Border
         {
             CornerRadius = new CornerRadius(8),
             Padding = new Thickness(10),
-            Background = new SolidColorBrush(Color.FromRgb(250, 250, 250)),
-            BorderBrush = new SolidColorBrush(Color.FromRgb(214, 219, 226)),
+            Background = new SolidColorBrush(WpfColor.FromRgb(250, 250, 250)),
+            BorderBrush = new SolidColorBrush(WpfColor.FromRgb(214, 219, 226)),
             BorderThickness = new Thickness(1),
             Effect = new System.Windows.Media.Effects.DropShadowEffect
             {
@@ -62,7 +71,7 @@ internal sealed class CompletionWindow : Window
 
     public Snippet? SelectedSnippet => listBox.SelectedItem is CompletionItem item ? item.Snippet : null;
 
-    public void ShowSnippets(IReadOnlyList<Snippet> snippets, Point screenPoint)
+    public void ShowSnippets(IReadOnlyList<Snippet> snippets, WpfPoint screenPoint)
     {
         if (snippets.Count == 0)
         {
@@ -128,7 +137,7 @@ internal sealed class CompletionWindow : Window
         {
             Text = "SnipKey",
             FontWeight = FontWeights.SemiBold,
-            Foreground = new SolidColorBrush(Color.FromRgb(38, 44, 52)),
+            Foreground = new SolidColorBrush(WpfColor.FromRgb(38, 44, 52)),
             Margin = new Thickness(6, 2, 6, 8)
         };
         DockPanel.SetDock(header, Dock.Top);
@@ -141,19 +150,19 @@ internal sealed class CompletionWindow : Window
         stack.SetValue(StackPanel.MarginProperty, new Thickness(2));
 
         var trigger = new FrameworkElementFactory(typeof(TextBlock));
-        trigger.SetBinding(TextBlock.TextProperty, new Binding(nameof(CompletionItem.TriggerText)));
-        trigger.SetValue(TextBlock.FontFamilyProperty, new FontFamily("Consolas"));
+        trigger.SetBinding(TextBlock.TextProperty, new WpfBinding(nameof(CompletionItem.TriggerText)));
+        trigger.SetValue(TextBlock.FontFamilyProperty, new WpfFontFamily("Consolas"));
         trigger.SetValue(TextBlock.FontWeightProperty, FontWeights.SemiBold);
-        trigger.SetValue(TextBlock.ForegroundProperty, new SolidColorBrush(Color.FromRgb(25, 94, 170)));
+        trigger.SetValue(TextBlock.ForegroundProperty, new SolidColorBrush(WpfColor.FromRgb(25, 94, 170)));
         stack.AppendChild(trigger);
 
         var preview = new FrameworkElementFactory(typeof(TextBlock));
-        preview.SetBinding(TextBlock.TextProperty, new Binding(nameof(CompletionItem.PreviewText)));
+        preview.SetBinding(TextBlock.TextProperty, new WpfBinding(nameof(CompletionItem.PreviewText)));
         preview.SetValue(TextBlock.TextWrappingProperty, TextWrapping.Wrap);
         preview.SetValue(TextBlock.TextTrimmingProperty, TextTrimming.CharacterEllipsis);
         preview.SetValue(TextBlock.MaxHeightProperty, 42.0);
         preview.SetValue(TextBlock.MarginProperty, new Thickness(0, 4, 0, 0));
-        preview.SetValue(TextBlock.ForegroundProperty, new SolidColorBrush(Color.FromRgb(91, 99, 112)));
+        preview.SetValue(TextBlock.ForegroundProperty, new SolidColorBrush(WpfColor.FromRgb(91, 99, 112)));
         stack.AppendChild(preview);
 
         return new DataTemplate
@@ -165,23 +174,35 @@ internal sealed class CompletionWindow : Window
     private static Style BuildItemStyle()
     {
         var style = new Style(typeof(ListBoxItem));
-        style.Setters.Add(new Setter(Control.PaddingProperty, new Thickness(10, 8, 10, 8)));
-        style.Setters.Add(new Setter(Control.MarginProperty, new Thickness(0, 2, 0, 2)));
-        style.Setters.Add(new Setter(Control.HorizontalContentAlignmentProperty, HorizontalAlignment.Stretch));
+        style.Setters.Add(new Setter(WpfControl.PaddingProperty, new Thickness(10, 8, 10, 8)));
+        style.Setters.Add(new Setter(WpfControl.MarginProperty, new Thickness(0, 2, 0, 2)));
+        style.Setters.Add(new Setter(WpfControl.HorizontalContentAlignmentProperty, WpfHorizontalAlignment.Stretch));
         return style;
     }
 
-    private void SelectItemUnderPointer(object sender, MouseEventArgs eventArgs)
+    private void SelectItemUnderPointer(object sender, WpfMouseEventArgs eventArgs)
     {
-        if (eventArgs.OriginalSource is not DependencyObject source)
-        {
-            return;
-        }
-
-        if (ItemsControl.ContainerFromElement(listBox, source) is ListBoxItem item)
+        if (ItemUnderPointer(eventArgs.OriginalSource) is { } item)
         {
             listBox.SelectedItem = item.DataContext;
         }
+    }
+
+    private void ConfirmItemUnderPointer(object sender, MouseButtonEventArgs eventArgs)
+    {
+        if (ItemUnderPointer(eventArgs.OriginalSource)?.DataContext is CompletionItem item)
+        {
+            listBox.SelectedItem = item;
+            SnippetConfirmed?.Invoke(item.Snippet);
+            eventArgs.Handled = true;
+        }
+    }
+
+    private ListBoxItem? ItemUnderPointer(object originalSource)
+    {
+        return originalSource is DependencyObject source
+            ? ItemsControl.ContainerFromElement(listBox, source) as ListBoxItem
+            : null;
     }
 
     private void ConfirmSelected()

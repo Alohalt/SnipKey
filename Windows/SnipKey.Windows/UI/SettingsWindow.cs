@@ -3,16 +3,25 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using Microsoft.Win32;
 using SnipKey.WinApp.Core;
+using WpfButton = System.Windows.Controls.Button;
+using WpfColor = System.Windows.Media.Color;
+using WpfHorizontalAlignment = System.Windows.HorizontalAlignment;
+using WpfListBox = System.Windows.Controls.ListBox;
+using WpfMessageBox = System.Windows.MessageBox;
+using WpfOpenFileDialog = Microsoft.Win32.OpenFileDialog;
+using WpfOrientation = System.Windows.Controls.Orientation;
+using WpfSaveFileDialog = Microsoft.Win32.SaveFileDialog;
+using WpfTextBox = System.Windows.Controls.TextBox;
 
 namespace SnipKey.WinApp.UI;
 
 internal sealed class SettingsWindow : Window
 {
     private readonly SnippetStore store;
-    private readonly TextBox searchBox = new();
-    private readonly ListBox snippetList = new();
-    private readonly TextBox triggerBox = new();
-    private readonly TextBox replacementBox = new();
+    private readonly WpfTextBox searchBox = new();
+    private readonly WpfListBox snippetList = new();
+    private readonly WpfTextBox triggerBox = new();
+    private readonly WpfTextBox replacementBox = new();
     private readonly TextBlock statusText = new();
     private Guid? selectedSnippetId;
 
@@ -54,7 +63,7 @@ internal sealed class SettingsWindow : Window
         root.Children.Add(rightPanel);
 
         statusText.Margin = new Thickness(0, 12, 0, 0);
-        statusText.Foreground = new SolidColorBrush(Color.FromRgb(91, 99, 112));
+        statusText.Foreground = new SolidColorBrush(WpfColor.FromRgb(91, 99, 112));
         Grid.SetColumnSpan(statusText, 2);
         Grid.SetRow(statusText, 1);
         root.Children.Add(statusText);
@@ -88,7 +97,7 @@ internal sealed class SettingsWindow : Window
 
         var toolbar = new StackPanel
         {
-            Orientation = Orientation.Horizontal,
+            Orientation = WpfOrientation.Horizontal,
             Margin = new Thickness(0, 0, 0, 10)
         };
         toolbar.Children.Add(MakeButton("New", AddSnippet));
@@ -156,8 +165,8 @@ internal sealed class SettingsWindow : Window
 
         var buttons = new StackPanel
         {
-            Orientation = Orientation.Horizontal,
-            HorizontalAlignment = HorizontalAlignment.Right,
+            Orientation = WpfOrientation.Horizontal,
+            HorizontalAlignment = WpfHorizontalAlignment.Right,
             Margin = new Thickness(0, 12, 0, 0)
         };
         buttons.Children.Add(MakeButton("Delete", DeleteSelectedSnippet));
@@ -168,9 +177,9 @@ internal sealed class SettingsWindow : Window
         return panel;
     }
 
-    private static Button MakeButton(string text, Action action)
+    private static WpfButton MakeButton(string text, Action action)
     {
-        var button = new Button
+        var button = new WpfButton
         {
             Content = text,
             MinWidth = 72,
@@ -285,7 +294,7 @@ internal sealed class SettingsWindow : Window
             return;
         }
 
-        var result = MessageBox.Show(this, "Delete this Key?", "SnipKey", MessageBoxButton.YesNo, MessageBoxImage.Question);
+        var result = WpfMessageBox.Show(this, "Delete this Key?", "SnipKey", MessageBoxButton.YesNo, MessageBoxImage.Question);
         if (result != MessageBoxResult.Yes)
         {
             return;
@@ -299,7 +308,7 @@ internal sealed class SettingsWindow : Window
 
     private void ImportSnippets()
     {
-        var dialog = new OpenFileDialog
+        var dialog = new WpfOpenFileDialog
         {
             Filter = "SnipKey JSON (*.json)|*.json|All files (*.*)|*.*"
         };
@@ -323,7 +332,7 @@ internal sealed class SettingsWindow : Window
 
     private void ExportSnippets()
     {
-        var dialog = new SaveFileDialog
+        var dialog = new WpfSaveFileDialog
         {
             FileName = "snippets.json",
             Filter = "SnipKey JSON (*.json)|*.json|All files (*.*)|*.*"

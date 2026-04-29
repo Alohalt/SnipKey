@@ -18,6 +18,7 @@ internal sealed class AppController : IDisposable
     private Forms.NotifyIcon? notifyIcon;
     private Forms.ToolStripMenuItem? enabledMenuItem;
     private SettingsWindow? settingsWindow;
+    private IntPtr replacementTargetWindow;
     private bool isDisposed;
     private bool isEnabled = true;
 
@@ -28,11 +29,11 @@ internal sealed class AppController : IDisposable
 
         keyboardMonitor.QueryChanged += OnQueryChanged;
         keyboardMonitor.TriggerCompleted += OnTriggerCompleted;
-        keyboardMonitor.Cancelled += (_, _) => completionWindow.HidePopup();
+        keyboardMonitor.Cancelled += () => completionWindow.HidePopup();
         keyboardMonitor.SelectionRequested += OnSelectionRequested;
         keyboardMonitor.SelectionConfirmed += OnSelectionConfirmed;
 
-        completionWindow.SnippetConfirmed += snippet => ConfirmSnippet(snippet, keyboardMonitor.CurrentBufferLength);
+        completionWindow.SnippetConfirmed += snippet => ConfirmSnippet(snippet, keyboardMonitor.CurrentBufferLength, replacementTargetWindow);
     }
 
     public void Start()
@@ -74,7 +75,7 @@ internal sealed class AppController : IDisposable
 
         var settingsItem = new Forms.ToolStripMenuItem("Settings...", image: null, onClick: (_, _) => ShowSettings());
         var reloadItem = new Forms.ToolStripMenuItem("Reload Keys", image: null, onClick: (_, _) => ReloadStore());
-        var quitItem = new Forms.ToolStripMenuItem("Quit SnipKey", image: null, onClick: (_, _) => Application.Current.Shutdown());
+        var quitItem = new Forms.ToolStripMenuItem("Quit SnipKey", image: null, onClick: (_, _) => System.Windows.Application.Current.Shutdown());
 
         var contextMenu = new Forms.ContextMenuStrip();
         contextMenu.Items.Add(enabledMenuItem);
@@ -143,11 +144,13 @@ internal sealed class AppController : IDisposable
             return;
         }
 
+        CaptureReplacementTargetWindow();
         completionWindow.ShowSnippets(matches, CaretPositionProvider.GetPopupPoint());
     }
 
     private void OnTriggerCompleted(string trigger, int deletionCount)
     {
+        CaptureReplacementTargetWindow();
         completionWindow.HidePopup();
 
         var snippet = engine.FindExact(trigger);
@@ -156,7 +159,7 @@ internal sealed class AppController : IDisposable
             return;
         }
 
-        ConfirmSnippet(snippet, deletionCount);
+        ConfirmSnippet(snippet, deletionCount, replacementTargetWindow);
     }
 
     private void OnSelectionRequested(KeyboardMonitor.SelectionDirection direction)
@@ -179,26 +182,35 @@ internal sealed class AppController : IDisposable
             return;
         }
 
-        ConfirmSnippet(selectedSnippet, keyboardMonitor.CurrentBufferLength);
+        ConfirmSnippet(selectedSnippet, keyboardMonitor.CurrentBufferLength, replacementTargetWindow);
     }
 
-    private void ConfirmSnippet(Snippet snippet, int deletionCount)
+    private void ConfirmSnippet(Snippet snippet, int deletionCount, IntPtr targetWindow)
     {
         completionWindow.HidePopup();
         keyboardMonitor.Reset();
         store.RecordAcceptance(snippet.Id);
-        _ = ReplaceSnippetAsync(deletionCount, snippet.Replacement);
+        _ = ReplaceSnippetAsync(deletionCount, snippet.Replacement, targetWindow);
     }
 
-    private async Task ReplaceSnippetAsync(int deletionCount, string replacement)
+    private async Task ReplaceSnippetAsync(int deletionCount, string replacement, IntPtr targetWindow)
     {
         try
         {
-            await textReplacer.ReplaceAsync(deletionCount, replacement).ConfigureAwait(true);
+            await textReplacer.ReplaceAsync(deletionCount, replacement, targetWindow).ConfigureAwait(true);
         }
         catch (Exception exception)
         {
             notifyIcon?.ShowBalloonTip(3000, "SnipKey", "Text replacement failed: " + exception.Message, Forms.ToolTipIcon.Error);
+        }
+    }
+
+    private void CaptureReplacementTargetWindow()
+    {
+        var foregroundWindow = NativeMethods.GetForegroundWindow();
+        if (!NativeMethods.IsCurrentProcessWindow(foregroundWindow))
+        {
+            replacementTargetWindow = foregroundWindow;
         }
     }
 }

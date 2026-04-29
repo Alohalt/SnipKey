@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Windows;
 using SnipKey.WinApp.Core;
@@ -8,8 +9,14 @@ internal sealed class TextReplacer
 {
     private readonly VariableResolver variableResolver = new();
 
-    public async Task ReplaceAsync(int deleteCount, string replacement)
+    public async Task ReplaceAsync(int deleteCount, string replacement, IntPtr targetWindow)
     {
+        if (targetWindow != IntPtr.Zero && NativeMethods.GetForegroundWindow() != targetWindow)
+        {
+            NativeMethods.SetForegroundWindow(targetWindow);
+            await Task.Delay(50).ConfigureAwait(true);
+        }
+
         var resolved = variableResolver.Resolve(replacement);
         SendRepeatedKey(NativeMethods.VkBack, deleteCount);
         await Task.Delay(50).ConfigureAwait(true);
@@ -17,7 +24,7 @@ internal sealed class TextReplacer
         var previousClipboard = TryGetClipboardData();
         try
         {
-            Clipboard.SetDataObject(resolved.Text, copy: true);
+            System.Windows.Clipboard.SetDataObject(resolved.Text, copy: true);
             SendPasteChord();
 
             if (resolved.CursorOffset is not null)
@@ -32,16 +39,16 @@ internal sealed class TextReplacer
             await Task.Delay(500).ConfigureAwait(true);
             if (previousClipboard is not null)
             {
-                Clipboard.SetDataObject(previousClipboard, copy: true);
+                System.Windows.Clipboard.SetDataObject(previousClipboard, copy: true);
             }
         }
     }
 
-    private static IDataObject? TryGetClipboardData()
+    private static System.Windows.IDataObject? TryGetClipboardData()
     {
         try
         {
-            return Clipboard.GetDataObject();
+            return System.Windows.Clipboard.GetDataObject();
         }
         catch
         {
@@ -84,6 +91,10 @@ internal sealed class TextReplacer
             }
         };
 
-        NativeMethods.SendInput(1, [input], Marshal.SizeOf<NativeMethods.Input>());
+        var sentCount = NativeMethods.SendInput(1, [input], Marshal.SizeOf<NativeMethods.Input>());
+        if (sentCount != 1)
+        {
+            throw new Win32Exception(Marshal.GetLastWin32Error(), "SendInput failed while sending replacement keystrokes.");
+        }
     }
 }

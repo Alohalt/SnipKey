@@ -6,7 +6,7 @@ namespace SnipKey.WinApp.Platform;
 
 internal static class CaretPositionProvider
 {
-    public static Point GetPopupPoint()
+    public static System.Windows.Point GetPopupPoint()
     {
         var foregroundWindow = NativeMethods.GetForegroundWindow();
         if (foregroundWindow != IntPtr.Zero)
@@ -27,12 +27,12 @@ internal static class CaretPositionProvider
 
                 if (NativeMethods.ClientToScreen(info.CaretWindow, ref point))
                 {
-                    return new Point(point.X, point.Y + 8);
+                    return new System.Windows.Point(point.X, point.Y + 8);
                 }
             }
         }
 
         var cursor = Forms.Cursor.Position;
-        return new Point(cursor.X + 12, cursor.Y + 20);
+        return new System.Windows.Point(cursor.X + 12, cursor.Y + 20);
     }
 }

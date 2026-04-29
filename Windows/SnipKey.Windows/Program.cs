@@ -17,7 +17,7 @@ internal static class Program
         System.Windows.Forms.Application.EnableVisualStyles();
         System.Windows.Forms.Application.SetCompatibleTextRenderingDefault(false);
 
-        var application = new Application
+        var application = new System.Windows.Application
         {
             ShutdownMode = ShutdownMode.OnExplicitShutdown
         };

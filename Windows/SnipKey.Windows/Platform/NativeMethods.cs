@@ -83,6 +83,10 @@ internal static class NativeMethods
     internal static extern IntPtr GetForegroundWindow();
 
     [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static extern bool SetForegroundWindow(IntPtr windowHandle);
+
+    [DllImport("user32.dll")]
     internal static extern uint GetWindowThreadProcessId(IntPtr windowHandle, out uint processId);
 
     [DllImport("user32.dll")]
@@ -116,6 +120,17 @@ internal static class NativeMethods
         return processId == Environment.ProcessId;
     }
 
+    internal static bool IsCurrentProcessWindow(IntPtr windowHandle)
+    {
+        if (windowHandle == IntPtr.Zero)
+        {
+            return false;
+        }
+
+        GetWindowThreadProcessId(windowHandle, out var processId);
+        return processId == Environment.ProcessId;
+    }
+
     [StructLayout(LayoutKind.Sequential)]
     internal struct KeyboardHookStruct
     {
@@ -137,7 +152,24 @@ internal static class NativeMethods
     internal struct InputUnion
     {
         [FieldOffset(0)]
+        public MouseInput Mouse;
+
+        [FieldOffset(0)]
         public KeyboardInput Keyboard;
+
+        [FieldOffset(0)]
+        public HardwareInput Hardware;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct MouseInput
+    {
+        public int X;
+        public int Y;
+        public uint MouseData;
+        public uint Flags;
+        public uint Time;
+        public UIntPtr ExtraInfo;
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -148,6 +180,14 @@ internal static class NativeMethods
         public uint Flags;
         public uint Time;
         public UIntPtr ExtraInfo;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct HardwareInput
+    {
+        public uint Message;
+        public ushort ParamL;
+        public ushort ParamH;
     }
 
     [StructLayout(LayoutKind.Sequential)]

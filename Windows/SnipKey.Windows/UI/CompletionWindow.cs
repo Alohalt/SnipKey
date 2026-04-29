@@ -8,12 +8,11 @@ using SnipKey.WinApp.Core;
 using SnipKey.WinApp.Platform;
 using WpfBinding = System.Windows.Data.Binding;
 using WpfBrushes = System.Windows.Media.Brushes;
-using WpfColor = System.Windows.Media.Color;
-using WpfControl = System.Windows.Controls.Control;
 using WpfFontFamily = System.Windows.Media.FontFamily;
 using WpfHorizontalAlignment = System.Windows.HorizontalAlignment;
 using WpfListBox = System.Windows.Controls.ListBox;
 using WpfMouseEventArgs = System.Windows.Input.MouseEventArgs;
+using WpfOrientation = System.Windows.Controls.Orientation;
 using WpfPoint = System.Windows.Point;
 
 namespace SnipKey.WinApp.UI;
@@ -21,6 +20,7 @@ namespace SnipKey.WinApp.UI;
 internal sealed class CompletionWindow : Window
 {
     private readonly WpfListBox listBox = new();
+    private readonly TextBlock countText = new();
 
     public CompletionWindow()
     {
@@ -32,29 +32,27 @@ internal sealed class CompletionWindow : Window
         AllowsTransparency = true;
         Background = WpfBrushes.Transparent;
         SizeToContent = SizeToContent.WidthAndHeight;
+        UseLayoutRounding = true;
+        SnapsToDevicePixels = true;
 
         listBox.Width = 380;
-        listBox.MaxHeight = 320;
+        listBox.MaxHeight = 288;
         listBox.BorderThickness = new Thickness(0);
         listBox.Background = WpfBrushes.Transparent;
         listBox.ItemTemplate = BuildItemTemplate();
-        listBox.ItemContainerStyle = BuildItemStyle();
+        listBox.ItemContainerStyle = UiTheme.CompletionListItemStyle();
+        listBox.SetValue(ScrollViewer.HorizontalScrollBarVisibilityProperty, ScrollBarVisibility.Disabled);
         listBox.PreviewMouseMove += SelectItemUnderPointer;
         listBox.PreviewMouseLeftButtonUp += ConfirmItemUnderPointer;
 
         Content = new Border
         {
-            CornerRadius = new CornerRadius(8),
-            Padding = new Thickness(10),
-            Background = new SolidColorBrush(WpfColor.FromRgb(250, 250, 250)),
-            BorderBrush = new SolidColorBrush(WpfColor.FromRgb(214, 219, 226)),
+            CornerRadius = new CornerRadius(18),
+            Padding = new Thickness(12),
+            Background = UiTheme.PanelBrush(),
+            BorderBrush = UiTheme.Brush(255, 255, 255, 0.72),
             BorderThickness = new Thickness(1),
-            Effect = new System.Windows.Media.Effects.DropShadowEffect
-            {
-                BlurRadius = 18,
-                ShadowDepth = 6,
-                Opacity = 0.18
-            },
+            Effect = UiTheme.Shadow(26, 14, 0.16),
             Child = new DockPanel
             {
                 LastChildFill = true,
@@ -81,6 +79,7 @@ internal sealed class CompletionWindow : Window
 
         listBox.ItemsSource = snippets.Select(snippet => new CompletionItem(snippet)).ToList();
         listBox.SelectedIndex = 0;
+        countText.Text = snippets.Count.ToString(System.Globalization.CultureInfo.CurrentCulture);
 
         Left = Math.Max(0, screenPoint.X);
         Top = Math.Max(0, screenPoint.Y);
@@ -131,15 +130,52 @@ internal sealed class CompletionWindow : Window
             extendedStyle | NativeMethods.WsExNoActivate | NativeMethods.WsExToolWindow);
     }
 
-    private static TextBlock BuildHeader()
+    private UIElement BuildHeader()
     {
-        var header = new TextBlock
+        var header = new Border
+        {
+            CornerRadius = new CornerRadius(14),
+            Padding = new Thickness(12, 10, 12, 10),
+            Margin = new Thickness(0, 0, 0, 10),
+            Background = UiTheme.Brush(0, 122, 255, 0.08),
+            BorderBrush = UiTheme.Brush(0, 122, 255, 0.13),
+            BorderThickness = new Thickness(1)
+        };
+
+        var layout = new Grid();
+        layout.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        layout.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+
+        var titleStack = new StackPanel
+        {
+            Orientation = WpfOrientation.Vertical
+        };
+        titleStack.Children.Add(new TextBlock
         {
             Text = "SnipKey",
+            FontSize = 14,
             FontWeight = FontWeights.SemiBold,
-            Foreground = new SolidColorBrush(WpfColor.FromRgb(38, 44, 52)),
-            Margin = new Thickness(6, 2, 6, 8)
-        };
+            Foreground = UiTheme.TextPrimaryBrush
+        });
+        titleStack.Children.Add(new TextBlock
+        {
+            Text = "Matches",
+            FontSize = 12,
+            Margin = new Thickness(0, 2, 0, 0),
+            Foreground = UiTheme.TextSecondaryBrush
+        });
+        layout.Children.Add(titleStack);
+
+        countText.FontSize = 13;
+        countText.FontWeight = FontWeights.SemiBold;
+        countText.Foreground = UiTheme.AccentTextBrush;
+        countText.VerticalAlignment = VerticalAlignment.Center;
+        countText.Padding = new Thickness(10, 5, 10, 5);
+        countText.Background = UiTheme.Brush(0, 122, 255, 0.12);
+        Grid.SetColumn(countText, 1);
+        layout.Children.Add(countText);
+
+        header.Child = layout;
         DockPanel.SetDock(header, Dock.Top);
         return header;
     }
@@ -147,37 +183,36 @@ internal sealed class CompletionWindow : Window
     private static DataTemplate BuildItemTemplate()
     {
         var stack = new FrameworkElementFactory(typeof(StackPanel));
-        stack.SetValue(StackPanel.MarginProperty, new Thickness(2));
+        stack.SetValue(StackPanel.MarginProperty, new Thickness(0));
+
+        var triggerPill = new FrameworkElementFactory(typeof(Border));
+        triggerPill.SetValue(Border.CornerRadiusProperty, new CornerRadius(12));
+        triggerPill.SetValue(Border.BackgroundProperty, UiTheme.Brush(0, 122, 255, 0.11));
+        triggerPill.SetValue(Border.PaddingProperty, new Thickness(9, 5, 9, 5));
+        triggerPill.SetValue(FrameworkElement.HorizontalAlignmentProperty, WpfHorizontalAlignment.Left);
 
         var trigger = new FrameworkElementFactory(typeof(TextBlock));
         trigger.SetBinding(TextBlock.TextProperty, new WpfBinding(nameof(CompletionItem.TriggerText)));
         trigger.SetValue(TextBlock.FontFamilyProperty, new WpfFontFamily("Consolas"));
         trigger.SetValue(TextBlock.FontWeightProperty, FontWeights.SemiBold);
-        trigger.SetValue(TextBlock.ForegroundProperty, new SolidColorBrush(WpfColor.FromRgb(25, 94, 170)));
-        stack.AppendChild(trigger);
+        trigger.SetValue(TextBlock.ForegroundProperty, UiTheme.AccentTextBrush);
+        triggerPill.AppendChild(trigger);
+        stack.AppendChild(triggerPill);
 
         var preview = new FrameworkElementFactory(typeof(TextBlock));
         preview.SetBinding(TextBlock.TextProperty, new WpfBinding(nameof(CompletionItem.PreviewText)));
         preview.SetValue(TextBlock.TextWrappingProperty, TextWrapping.Wrap);
         preview.SetValue(TextBlock.TextTrimmingProperty, TextTrimming.CharacterEllipsis);
         preview.SetValue(TextBlock.MaxHeightProperty, 42.0);
-        preview.SetValue(TextBlock.MarginProperty, new Thickness(0, 4, 0, 0));
-        preview.SetValue(TextBlock.ForegroundProperty, new SolidColorBrush(WpfColor.FromRgb(91, 99, 112)));
+        preview.SetValue(TextBlock.FontSizeProperty, 13.0);
+        preview.SetValue(TextBlock.MarginProperty, new Thickness(0, 9, 0, 0));
+        preview.SetValue(TextBlock.ForegroundProperty, UiTheme.TextSecondaryBrush);
         stack.AppendChild(preview);
 
         return new DataTemplate
         {
             VisualTree = stack
         };
-    }
-
-    private static Style BuildItemStyle()
-    {
-        var style = new Style(typeof(ListBoxItem));
-        style.Setters.Add(new Setter(WpfControl.PaddingProperty, new Thickness(10, 8, 10, 8)));
-        style.Setters.Add(new Setter(WpfControl.MarginProperty, new Thickness(0, 2, 0, 2)));
-        style.Setters.Add(new Setter(WpfControl.HorizontalContentAlignmentProperty, WpfHorizontalAlignment.Stretch));
-        return style;
     }
 
     private void SelectItemUnderPointer(object sender, WpfMouseEventArgs eventArgs)

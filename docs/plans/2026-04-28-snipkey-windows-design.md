@@ -60,6 +60,15 @@ Windows 平台层对应 macOS 实现中的系统 API 边界：
 - `SettingsWindow` 是首版 Key 管理界面，覆盖创建、编辑、删除、导入和导出。
 - 托盘菜单提供启用开关、打开设置、重载 Key 和退出。
 
+#### 2026-04-29 UI 质感优化
+
+本轮优化只调整 Windows UI 表现层，不改变 Core、平台 hook、数据结构或替换语义。目标是让 Windows 版在 MVP 基础上更接近 macOS 版的视觉层次和直接交互：
+
+- `UiTheme` 集中管理 WPF 色彩、圆角、阴影、按钮、输入框和列表项样式，避免设置窗与候选窗各自散落硬编码视觉参数。
+- `CompletionWindow` 对齐 macOS 候选面板的轻量材质感：圆角面板、柔和阴影、header 计数、trigger 胶囊、候选行 hover/selected 状态和左侧选中强调条。
+- `SettingsWindow` 改为更清晰的 sidebar + detail 布局：左侧品牌/统计/搜索/Key 列表，右侧 trigger 与 replacement 编辑区，底部状态栏保留导入、导出、保存等反馈。
+- 鼠标悬停选择、单击确认、键盘上下移动和确认仍沿用 MVP 的既有事件流，避免引入新的替换风险。
+
 ## 首版不做的内容
 
 - 剪贴板历史和重复复制建议：需要移植 `ClipboardHistoryStore`、剪贴板监听与提示策略，行为面较大，放到第二阶段。

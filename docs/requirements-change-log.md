@@ -25,6 +25,7 @@
 | 2026-04-21 | 交互调整 | 补全面板支持鼠标悬停高亮与单击确认，并在点击面板外部一次后立即取消当前补全会话。 | 需要让候选选择支持鼠标操作，同时避免用户切走编辑焦点后仍继续替换到错误位置。 | `CompletionPanel`、`CompletionView`、`AppDelegate`、README、设计文档 |
 | 2026-04-28 | 范围扩展 | 新增英文和简体中文界面语言切换，默认语言保持简体中文；语言偏好独立存储在 `UserDefaults`，不迁移已有 Key、分组或剪贴板内容。 | 多语言使用需求补充，同时避免改动既有用户数据语义。 | `AppLanguageStore`、`L10n`、设置页、菜单栏、补全面板、剪贴板记录、权限与提示弹窗、README |
 | 2026-04-28 | 范围扩展 | 新增原生 Windows MVP，覆盖托盘入口、Key 管理、全局 `#trigger` 监听、候选选择和文本替换；剪贴板历史建议与完整多语言暂不纳入首版。 | Windows 版需要用 Win32/WPF 重写平台集成，先交付可验证的最小闭环。 | `Windows/SnipKey.Windows`、Makefile、README、Windows 设计文档 |
+| 2026-04-29 | 体验调整 | Windows 版设置窗口和候选弹窗开始向 macOS 版的轻量材质、圆角、层次化列表、悬停选择和明确选中态对齐；不改变数据结构和触发替换语义。 | Windows MVP 功能闭环后，需要提升 UI 质感并减少与 macOS 版体验落差。 | `Windows/SnipKey.Windows/UI`、Windows 设计文档 |
 
 ## 后续追加模板
 

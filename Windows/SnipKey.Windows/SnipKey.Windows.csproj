@@ -10,4 +10,7 @@
     <RootNamespace>SnipKey.WinApp</RootNamespace>
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
   </PropertyGroup>
+  <ItemGroup>
+    <Resource Include="..\..\site\app-icon.png" Link="Assets\app-icon.png" />
+  </ItemGroup>
 </Project>

@@ -75,6 +75,41 @@ public sealed class SnippetStore
         Save();
     }
 
+    public SnippetGroup AddGroup(string name)
+    {
+        var group = new SnippetGroup
+        {
+            Name = NormalizedGroupName(name, groups.Select(existingGroup => existingGroup.Name))
+        };
+        groups.Add(group);
+        Save();
+        return group.Clone();
+    }
+
+    public bool RenameGroup(Guid id, string name)
+    {
+        var group = groups.FirstOrDefault(existingGroup => existingGroup.Id == id);
+        if (group is null)
+        {
+            return false;
+        }
+
+        group.Name = NormalizedGroupName(name, groups.Where(existingGroup => existingGroup.Id != id).Select(existingGroup => existingGroup.Name));
+        Save();
+        return true;
+    }
+
+    public void DeleteGroup(Guid id)
+    {
+        groups.RemoveAll(group => group.Id == id);
+        foreach (var snippet in snippets.Where(snippet => snippet.GroupId == id))
+        {
+            snippet.GroupId = null;
+        }
+
+        Save();
+    }
+
     public void RecordAcceptance(Guid id)
     {
         var snippet = snippets.FirstOrDefault(existingSnippet => existingSnippet.Id == id);
@@ -101,6 +136,11 @@ public sealed class SnippetStore
         return SnippetTriggerRules.NextAvailableTrigger(snippets.Select(snippet => snippet.Trigger), baseTrigger);
     }
 
+    public string NextAvailableGroupName(string baseName = "New Group")
+    {
+        return NormalizedGroupName(baseName, groups.Select(group => group.Name));
+    }
+
     public void Load()
     {
         if (!File.Exists(filePath))
@@ -112,9 +152,10 @@ public sealed class SnippetStore
         var decoded = JsonSerializer.Deserialize<SnippetData>(json, JsonOptions) ?? new SnippetData();
         var normalized = NormalizeSnippets(decoded.Snippets);
         snippets = normalized.Snippets;
-        groups = decoded.Groups ?? [];
+        groups = NormalizeGroups(decoded.Groups ?? []);
+        var didCleanGroupReferences = CleanInvalidGroupReferences();
 
-        if (normalized.DidChange)
+        if (normalized.DidChange || didCleanGroupReferences)
         {
             Save();
         }
@@ -133,7 +174,7 @@ public sealed class SnippetStore
         var data = new SnippetData
         {
             Snippets = snippets.Select(snippet => snippet.Clone()).ToList(),
-            Groups = groups
+            Groups = groups.Select(group => group.Clone()).ToList()
         };
         var json = JsonSerializer.Serialize(data, JsonOptions);
         File.WriteAllText(filePath, json);
@@ -145,7 +186,7 @@ public sealed class SnippetStore
         var data = new SnippetData
         {
             Snippets = snippets.Select(snippet => snippet.Clone()).ToList(),
-            Groups = groups
+            Groups = groups.Select(group => group.Clone()).ToList()
         };
         File.WriteAllText(exportPath, JsonSerializer.Serialize(data, JsonOptions));
     }
@@ -155,8 +196,68 @@ public sealed class SnippetStore
         var json = File.ReadAllText(importPath);
         var decoded = JsonSerializer.Deserialize<SnippetData>(json, JsonOptions) ?? new SnippetData();
         snippets = NormalizeSnippets(decoded.Snippets).Snippets;
-        groups = decoded.Groups ?? [];
+        groups = NormalizeGroups(decoded.Groups ?? []);
+        CleanInvalidGroupReferences();
         Save();
+    }
+
+    private static List<SnippetGroup> NormalizeGroups(IEnumerable<SnippetGroup> rawGroups)
+    {
+        var normalizedNames = new List<string>();
+        var normalizedGroups = new List<SnippetGroup>();
+
+        foreach (var rawGroup in rawGroups)
+        {
+            var group = rawGroup.Clone();
+            if (group.Id == Guid.Empty)
+            {
+                group.Id = Guid.NewGuid();
+            }
+
+            group.Name = NormalizedGroupName(group.Name, normalizedNames);
+            normalizedNames.Add(group.Name);
+            normalizedGroups.Add(group);
+        }
+
+        return normalizedGroups;
+    }
+
+    private bool CleanInvalidGroupReferences()
+    {
+        var validGroupIds = groups.Select(group => group.Id).ToHashSet();
+        var didChange = false;
+        foreach (var snippet in snippets)
+        {
+            if (snippet.GroupId is not null && !validGroupIds.Contains(snippet.GroupId.Value))
+            {
+                snippet.GroupId = null;
+                didChange = true;
+            }
+        }
+
+        return didChange;
+    }
+
+    private static string NormalizedGroupName(string name, IEnumerable<string> existingNames)
+    {
+        var baseName = string.IsNullOrWhiteSpace(name) ? "New Group" : name.Trim();
+        var normalizedExisting = existingNames.Select(existingName => existingName.ToLowerInvariant()).ToHashSet();
+        if (!normalizedExisting.Contains(baseName.ToLowerInvariant()))
+        {
+            return baseName;
+        }
+
+        var suffix = 2;
+        while (true)
+        {
+            var candidate = baseName + " " + suffix.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            if (!normalizedExisting.Contains(candidate.ToLowerInvariant()))
+            {
+                return candidate;
+            }
+
+            suffix += 1;
+        }
     }
 
     private static (List<Snippet> Snippets, bool DidChange) NormalizeSnippets(IEnumerable<Snippet> rawSnippets)

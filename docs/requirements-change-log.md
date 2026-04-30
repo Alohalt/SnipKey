@@ -26,6 +26,7 @@
 | 2026-04-28 | 范围扩展 | 新增英文和简体中文界面语言切换，默认语言保持简体中文；语言偏好独立存储在 `UserDefaults`，不迁移已有 Key、分组或剪贴板内容。 | 多语言使用需求补充，同时避免改动既有用户数据语义。 | `AppLanguageStore`、`L10n`、设置页、菜单栏、补全面板、剪贴板记录、权限与提示弹窗、README |
 | 2026-04-28 | 范围扩展 | 新增原生 Windows MVP，覆盖托盘入口、Key 管理、全局 `#trigger` 监听、候选选择和文本替换；剪贴板历史建议与完整多语言暂不纳入首版。 | Windows 版需要用 Win32/WPF 重写平台集成，先交付可验证的最小闭环。 | `Windows/SnipKey.Windows`、Makefile、README、Windows 设计文档 |
 | 2026-04-29 | 体验调整 | Windows 版设置窗口和候选弹窗开始向 macOS 版的轻量材质、圆角、层次化列表、悬停选择和明确选中态对齐；不改变数据结构和触发替换语义。 | Windows MVP 功能闭环后，需要提升 UI 质感并减少与 macOS 版体验落差。 | `Windows/SnipKey.Windows/UI`、Windows 设计文档 |
+| 2026-04-30 | 范围收敛 | Windows 版补齐多语言、分组工作台、剪贴板历史、重复复制建议建 Key、guide/about、托盘入口和外部点击取消候选；交付侧新增 `dotnet publish` 路径与 Windows 输入兼容边界文档。 | 按 Windows 与 macOS 功能对齐计划推进，减少 Windows 版与主产品能力差距。 | `Windows/SnipKey.Windows`、Makefile、README、Windows 输入与打包文档 |
 
 ## 后续追加模板
 

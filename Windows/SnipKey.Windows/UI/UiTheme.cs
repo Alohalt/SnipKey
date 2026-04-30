@@ -6,11 +6,17 @@ using System.Windows.Media.Effects;
 using WpfButton = System.Windows.Controls.Button;
 using WpfBrushes = System.Windows.Media.Brushes;
 using WpfColor = System.Windows.Media.Color;
+using WpfComboBox = System.Windows.Controls.ComboBox;
+using WpfComboBoxItem = System.Windows.Controls.ComboBoxItem;
 using WpfControl = System.Windows.Controls.Control;
 using WpfCursors = System.Windows.Input.Cursors;
 using WpfHorizontalAlignment = System.Windows.HorizontalAlignment;
+using WpfPath = System.Windows.Shapes.Path;
+using WpfPlacementMode = System.Windows.Controls.Primitives.PlacementMode;
 using WpfPoint = System.Windows.Point;
+using WpfPopup = System.Windows.Controls.Primitives.Popup;
 using WpfTextBox = System.Windows.Controls.TextBox;
+using WpfToggleButton = System.Windows.Controls.Primitives.ToggleButton;
 using WpfVerticalAlignment = System.Windows.VerticalAlignment;
 
 namespace SnipKey.WinApp.UI;
@@ -167,6 +173,126 @@ internal static class UiTheme
         return style;
     }
 
+    public static Style ComboBoxStyle()
+    {
+        var style = new Style(typeof(WpfComboBox));
+        style.Setters.Add(new Setter(WpfControl.BackgroundProperty, SurfaceBrush));
+        style.Setters.Add(new Setter(WpfControl.BorderBrushProperty, HairlineBrush));
+        style.Setters.Add(new Setter(WpfControl.BorderThicknessProperty, new Thickness(1)));
+        style.Setters.Add(new Setter(WpfControl.ForegroundProperty, TextPrimaryBrush));
+        style.Setters.Add(new Setter(WpfControl.FontSizeProperty, 13.0));
+        style.Setters.Add(new Setter(WpfControl.PaddingProperty, new Thickness(12, 0, 10, 0)));
+        style.Setters.Add(new Setter(WpfControl.FocusVisualStyleProperty, null));
+        style.Setters.Add(new Setter(WpfComboBox.MaxDropDownHeightProperty, 260.0));
+        style.Setters.Add(new Setter(WpfComboBox.ItemContainerStyleProperty, ComboBoxItemStyle()));
+
+        var grid = new FrameworkElementFactory(typeof(Grid));
+        grid.SetValue(FrameworkElement.SnapsToDevicePixelsProperty, true);
+
+        var chrome = new FrameworkElementFactory(typeof(Border));
+        chrome.Name = "Chrome";
+        chrome.SetValue(Border.CornerRadiusProperty, new CornerRadius(9));
+        chrome.SetBinding(Border.BackgroundProperty, new System.Windows.Data.Binding("Background") { RelativeSource = System.Windows.Data.RelativeSource.TemplatedParent });
+        chrome.SetBinding(Border.BorderBrushProperty, new System.Windows.Data.Binding("BorderBrush") { RelativeSource = System.Windows.Data.RelativeSource.TemplatedParent });
+        chrome.SetBinding(Border.BorderThicknessProperty, new System.Windows.Data.Binding("BorderThickness") { RelativeSource = System.Windows.Data.RelativeSource.TemplatedParent });
+        grid.AppendChild(chrome);
+
+        var toggleChrome = new FrameworkElementFactory(typeof(Border));
+        toggleChrome.SetValue(Border.BackgroundProperty, WpfBrushes.Transparent);
+        var toggleTemplate = new ControlTemplate(typeof(WpfToggleButton))
+        {
+            VisualTree = toggleChrome
+        };
+        var toggleButton = new FrameworkElementFactory(typeof(WpfToggleButton));
+        toggleButton.Name = "ToggleButton";
+        toggleButton.SetValue(WpfControl.FocusVisualStyleProperty, null);
+        toggleButton.SetValue(WpfControl.FocusableProperty, false);
+        toggleButton.SetValue(WpfControl.BackgroundProperty, WpfBrushes.Transparent);
+        toggleButton.SetValue(WpfControl.BorderThicknessProperty, new Thickness(0));
+        toggleButton.SetValue(WpfControl.TemplateProperty, toggleTemplate);
+        toggleButton.SetBinding(WpfToggleButton.IsCheckedProperty, new System.Windows.Data.Binding("IsDropDownOpen")
+        {
+            RelativeSource = System.Windows.Data.RelativeSource.TemplatedParent,
+            Mode = System.Windows.Data.BindingMode.TwoWay
+        });
+        grid.AppendChild(toggleButton);
+
+        var contentSite = new FrameworkElementFactory(typeof(ContentPresenter));
+        contentSite.Name = "ContentSite";
+        contentSite.SetValue(UIElement.IsHitTestVisibleProperty, false);
+        contentSite.SetValue(ContentPresenter.VerticalAlignmentProperty, WpfVerticalAlignment.Center);
+        contentSite.SetValue(ContentPresenter.HorizontalAlignmentProperty, WpfHorizontalAlignment.Left);
+        contentSite.SetBinding(ContentPresenter.ContentProperty, new System.Windows.Data.Binding("SelectionBoxItem") { RelativeSource = System.Windows.Data.RelativeSource.TemplatedParent });
+        contentSite.SetBinding(ContentPresenter.ContentTemplateProperty, new System.Windows.Data.Binding("SelectionBoxItemTemplate") { RelativeSource = System.Windows.Data.RelativeSource.TemplatedParent });
+        contentSite.SetBinding(ContentPresenter.ContentStringFormatProperty, new System.Windows.Data.Binding("SelectionBoxItemStringFormat") { RelativeSource = System.Windows.Data.RelativeSource.TemplatedParent });
+        contentSite.SetBinding(FrameworkElement.MarginProperty, new System.Windows.Data.Binding("Padding") { RelativeSource = System.Windows.Data.RelativeSource.TemplatedParent });
+        grid.AppendChild(contentSite);
+
+        var arrow = new FrameworkElementFactory(typeof(WpfPath));
+        arrow.SetValue(UIElement.IsHitTestVisibleProperty, false);
+        arrow.SetValue(WpfPath.DataProperty, Geometry.Parse("M 0 0 L 4 4 L 8 0"));
+        arrow.SetValue(WpfPath.StrokeProperty, TextSecondaryBrush);
+        arrow.SetValue(WpfPath.StrokeThicknessProperty, 1.8);
+        arrow.SetValue(WpfPath.StrokeStartLineCapProperty, PenLineCap.Round);
+        arrow.SetValue(WpfPath.StrokeEndLineCapProperty, PenLineCap.Round);
+        arrow.SetValue(FrameworkElement.WidthProperty, 8.0);
+        arrow.SetValue(FrameworkElement.HeightProperty, 5.0);
+        arrow.SetValue(FrameworkElement.HorizontalAlignmentProperty, WpfHorizontalAlignment.Right);
+        arrow.SetValue(FrameworkElement.VerticalAlignmentProperty, WpfVerticalAlignment.Center);
+        arrow.SetValue(FrameworkElement.MarginProperty, new Thickness(0, 0, 12, 0));
+        grid.AppendChild(arrow);
+
+        var popup = new FrameworkElementFactory(typeof(WpfPopup));
+        popup.Name = "PART_Popup";
+        popup.SetValue(WpfPopup.AllowsTransparencyProperty, true);
+        popup.SetValue(WpfPopup.FocusableProperty, false);
+        popup.SetValue(WpfPopup.PlacementProperty, WpfPlacementMode.Bottom);
+        popup.SetBinding(WpfPopup.IsOpenProperty, new System.Windows.Data.Binding("IsDropDownOpen") { RelativeSource = System.Windows.Data.RelativeSource.TemplatedParent });
+        popup.SetBinding(WpfPopup.PlacementTargetProperty, new System.Windows.Data.Binding { RelativeSource = System.Windows.Data.RelativeSource.TemplatedParent });
+
+        var dropDownBorder = new FrameworkElementFactory(typeof(Border));
+        dropDownBorder.Name = "DropDownBorder";
+        dropDownBorder.SetValue(Border.CornerRadiusProperty, new CornerRadius(9));
+        dropDownBorder.SetValue(Border.BackgroundProperty, Brush(255, 255, 255));
+        dropDownBorder.SetValue(Border.BorderBrushProperty, Brush(190, 197, 209));
+        dropDownBorder.SetValue(Border.BorderThicknessProperty, new Thickness(1));
+        dropDownBorder.SetValue(Border.PaddingProperty, new Thickness(4));
+        dropDownBorder.SetValue(FrameworkElement.MarginProperty, new Thickness(0, 4, 0, 0));
+        dropDownBorder.SetBinding(FrameworkElement.MinWidthProperty, new System.Windows.Data.Binding("ActualWidth") { RelativeSource = System.Windows.Data.RelativeSource.TemplatedParent });
+        dropDownBorder.SetValue(UIElement.EffectProperty, Shadow(16, 4, 0.12));
+
+        var scrollViewer = new FrameworkElementFactory(typeof(ScrollViewer));
+        scrollViewer.SetValue(ScrollViewer.CanContentScrollProperty, true);
+        scrollViewer.SetValue(ScrollViewer.VerticalScrollBarVisibilityProperty, ScrollBarVisibility.Auto);
+        scrollViewer.SetValue(ScrollViewer.HorizontalScrollBarVisibilityProperty, ScrollBarVisibility.Disabled);
+        scrollViewer.SetValue(FrameworkElement.MaxHeightProperty, 260.0);
+        scrollViewer.AppendChild(new FrameworkElementFactory(typeof(ItemsPresenter)));
+        dropDownBorder.AppendChild(scrollViewer);
+        popup.AppendChild(dropDownBorder);
+        grid.AppendChild(popup);
+
+        var template = new ControlTemplate(typeof(WpfComboBox))
+        {
+            VisualTree = grid
+        };
+
+        var hoverTrigger = new Trigger { Property = UIElement.IsMouseOverProperty, Value = true };
+        hoverTrigger.Setters.Add(new Setter(WpfControl.BorderBrushProperty, Brush(190, 197, 209)));
+        template.Triggers.Add(hoverTrigger);
+
+        var focusTrigger = new Trigger { Property = WpfComboBox.IsKeyboardFocusWithinProperty, Value = true };
+        focusTrigger.Setters.Add(new Setter(WpfControl.BorderBrushProperty, AccentBrush));
+        focusTrigger.Setters.Add(new Setter(WpfControl.BackgroundProperty, Brush(255, 255, 255)));
+        template.Triggers.Add(focusTrigger);
+
+        var disabledTrigger = new Trigger { Property = UIElement.IsEnabledProperty, Value = false };
+        disabledTrigger.Setters.Add(new Setter(UIElement.OpacityProperty, 0.55));
+        template.Triggers.Add(disabledTrigger);
+
+        style.Setters.Add(new Setter(WpfControl.TemplateProperty, template));
+        return style;
+    }
+
     public static Style SettingsListItemStyle()
     {
         var style = new Style(typeof(ListBoxItem));
@@ -315,5 +441,41 @@ internal static class UiTheme
             ButtonTone.Danger => Brush(255, 236, 236),
             _ => Brush(235, 239, 246)
         };
+    }
+
+    private static Style ComboBoxItemStyle()
+    {
+        var style = new Style(typeof(WpfComboBoxItem));
+        style.Setters.Add(new Setter(WpfControl.FocusVisualStyleProperty, null));
+        style.Setters.Add(new Setter(WpfControl.HorizontalContentAlignmentProperty, WpfHorizontalAlignment.Stretch));
+        style.Setters.Add(new Setter(WpfControl.PaddingProperty, new Thickness(10, 7, 10, 7)));
+
+        var chrome = new FrameworkElementFactory(typeof(Border));
+        chrome.Name = "Chrome";
+        chrome.SetValue(Border.CornerRadiusProperty, new CornerRadius(7));
+        chrome.SetValue(Border.BackgroundProperty, WpfBrushes.Transparent);
+
+        var presenter = new FrameworkElementFactory(typeof(ContentPresenter));
+        presenter.SetValue(ContentPresenter.HorizontalAlignmentProperty, WpfHorizontalAlignment.Stretch);
+        presenter.SetValue(ContentPresenter.VerticalAlignmentProperty, WpfVerticalAlignment.Center);
+        presenter.SetBinding(FrameworkElement.MarginProperty, new System.Windows.Data.Binding("Padding") { RelativeSource = System.Windows.Data.RelativeSource.TemplatedParent });
+        chrome.AppendChild(presenter);
+
+        var template = new ControlTemplate(typeof(WpfComboBoxItem))
+        {
+            VisualTree = chrome
+        };
+
+        var hoverTrigger = new Trigger { Property = UIElement.IsMouseOverProperty, Value = true };
+        hoverTrigger.Setters.Add(new Setter(Border.BackgroundProperty, HoverBrush, "Chrome"));
+        template.Triggers.Add(hoverTrigger);
+
+        var selectedTrigger = new Trigger { Property = WpfComboBoxItem.IsSelectedProperty, Value = true };
+        selectedTrigger.Setters.Add(new Setter(Border.BackgroundProperty, SelectedBrush, "Chrome"));
+        selectedTrigger.Setters.Add(new Setter(WpfControl.ForegroundProperty, AccentTextBrush));
+        template.Triggers.Add(selectedTrigger);
+
+        style.Setters.Add(new Setter(WpfControl.TemplateProperty, template));
+        return style;
     }
 }

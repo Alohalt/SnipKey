@@ -9,6 +9,8 @@ internal sealed class TextReplacer
 {
     private readonly VariableResolver variableResolver = new();
 
+    public event Action<string>? ClipboardWriteRequested;
+
     public async Task ReplaceAsync(int deleteCount, string replacement, IntPtr targetWindow)
     {
         if (targetWindow != IntPtr.Zero && NativeMethods.GetForegroundWindow() != targetWindow)
@@ -24,6 +26,7 @@ internal sealed class TextReplacer
         var previousClipboard = TryGetClipboardData();
         try
         {
+            ClipboardWriteRequested?.Invoke(resolved.Text);
             System.Windows.Clipboard.SetDataObject(resolved.Text, copy: true);
             SendPasteChord();
 
@@ -39,6 +42,11 @@ internal sealed class TextReplacer
             await Task.Delay(500).ConfigureAwait(true);
             if (previousClipboard is not null)
             {
+                if (TryGetClipboardText(previousClipboard) is { } previousText)
+                {
+                    ClipboardWriteRequested?.Invoke(previousText);
+                }
+
                 System.Windows.Clipboard.SetDataObject(previousClipboard, copy: true);
             }
         }
@@ -49,6 +57,20 @@ internal sealed class TextReplacer
         try
         {
             return System.Windows.Clipboard.GetDataObject();
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private static string? TryGetClipboardText(System.Windows.IDataObject dataObject)
+    {
+        try
+        {
+            return dataObject.GetDataPresent(System.Windows.DataFormats.UnicodeText)
+                ? dataObject.GetData(System.Windows.DataFormats.UnicodeText) as string
+                : null;
         }
         catch
         {

@@ -50,6 +50,20 @@ public sealed class SnippetGroup
 
     [JsonPropertyName("name")]
     public string Name { get; set; } = string.Empty;
+
+    public SnippetGroup Clone()
+    {
+        return new SnippetGroup
+        {
+            Id = Id,
+            Name = Name
+        };
+    }
+
+    public override string ToString()
+    {
+        return Name;
+    }
 }
 
 public sealed class SnippetData

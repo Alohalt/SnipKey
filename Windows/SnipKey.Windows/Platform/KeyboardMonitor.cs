@@ -125,7 +125,7 @@ internal sealed class KeyboardMonitor : IDisposable
             return;
         }
 
-        CompleteTrigger(terminatorLength: eventArgs.Text.Length);
+        CompleteTrigger(eventArgs.Text);
     }
 
     private static bool HasShortcutModifier()
@@ -148,19 +148,18 @@ internal sealed class KeyboardMonitor : IDisposable
         CancelCapture(notify: true);
     }
 
-    private void CompleteTrigger(int terminatorLength)
+    private void CompleteTrigger(string terminatorText)
     {
-        var trigger = buffer.Length > 1 ? buffer[1..] : string.Empty;
-        var deletionCount = buffer.Length + terminatorLength;
+        var completedTrigger = TriggerContextAnalyzer.CompletedTriggerIn(buffer + terminatorText);
         Reset();
 
-        if (string.IsNullOrEmpty(trigger))
+        if (completedTrigger is null)
         {
             Cancelled?.Invoke();
             return;
         }
 
-        TriggerCompleted?.Invoke(trigger, deletionCount);
+        TriggerCompleted?.Invoke(completedTrigger.Value.Trigger, completedTrigger.Value.DeletionCount);
     }
 
     private void CancelCapture(bool notify)

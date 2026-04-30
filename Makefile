@@ -7,6 +7,7 @@ BUILD_DIR := .build/$(BUILD_CONFIGURATION)
 BUILD_PRODUCT := $(BUILD_DIR)/$(SWIFT_RUN_TARGET)
 APP_ICON := Resources/AppIcon.icns
 WINDOWS_PROJECT := Windows/SnipKey.Windows/SnipKey.Windows.csproj
+WINDOWS_PUBLISH_DIR := .build/windows-publish
 
 DIST_APP_NAME ?= SnipKey.app
 DIST_APP_DISPLAY_NAME ?= SnipKey
@@ -31,7 +32,7 @@ APPLE_DEVELOPMENT_IDENTITY ?= $(shell security find-identity -v -p codesigning 2
 DEVELOPER_ID_APPLICATION_IDENTITY ?= $(shell security find-identity -v -p codesigning 2>/dev/null | sed -n 's/.*"\(Developer ID Application:[^"]*\)"/\1/p' | head -n 1)
 DIST_SIGNING_IDENTITY ?= $(if $(DEVELOPER_ID_APPLICATION_IDENTITY),$(DEVELOPER_ID_APPLICATION_IDENTITY),$(APPLE_DEVELOPMENT_IDENTITY))
 
-.PHONY: build test run run-swift clean windows-build windows-run bundle bundle-dev bundle-dist dmg package-dmg verify-dist install-dev run-dev restart-dev verify-dev uninstall-dev signing-identities print-signing-identity print-dist-signing-identity signing-help bootstrap-personal-team generate-icon
+.PHONY: build test run run-swift clean windows-build windows-run windows-publish bundle bundle-dev bundle-dist dmg package-dmg verify-dist install-dev run-dev restart-dev verify-dev uninstall-dev signing-identities print-signing-identity print-dist-signing-identity signing-help bootstrap-personal-team generate-icon
 
 define require_apple_development_identity
 	@if [ -z "$(APPLE_DEVELOPMENT_IDENTITY)" ]; then \
@@ -87,6 +88,15 @@ windows-run:
 		exit 1; \
 	fi
 	dotnet run --project "$(WINDOWS_PROJECT)"
+
+windows-publish:
+	@if ! command -v dotnet >/dev/null 2>&1; then \
+		echo "dotnet SDK was not found. Install .NET 8 SDK on Windows, then rerun this target."; \
+		exit 1; \
+	fi
+	rm -rf "$(WINDOWS_PUBLISH_DIR)"
+	dotnet publish "$(WINDOWS_PROJECT)" -c Release -r win-x64 --self-contained false -p:PublishSingleFile=true -o "$(WINDOWS_PUBLISH_DIR)"
+	@echo "Windows publish output: $(WINDOWS_PUBLISH_DIR)"
 
 clean:
 	swift package clean

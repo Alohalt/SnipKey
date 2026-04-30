@@ -1,31 +1,49 @@
 using System.Drawing;
 using System.Windows;
+using System.Windows.Threading;
 using SnipKey.WinApp.Core;
 using SnipKey.WinApp.Platform;
 using SnipKey.WinApp.UI;
 using Forms = System.Windows.Forms;
+using MessageBox = System.Windows.MessageBox;
 
 namespace SnipKey.WinApp;
 
 internal sealed class AppController : IDisposable
 {
     private readonly SnippetStore store = new();
+    private readonly ClipboardHistoryStore clipboardHistoryStore = new();
+    private readonly AppLanguageStore languageStore = new();
     private readonly SnippetEngine engine = new();
     private readonly KeyboardMonitor keyboardMonitor = new();
     private readonly TextReplacer textReplacer = new();
-    private readonly CompletionWindow completionWindow = new();
+    private readonly CompletionWindow completionWindow;
+    private readonly ClipboardMonitor clipboardMonitor;
+    private readonly DispatcherTimer outsideClickTimer = new();
+    private readonly Icon trayIcon = AppIcon.NotifyIcon();
 
     private Forms.NotifyIcon? notifyIcon;
     private Forms.ToolStripMenuItem? enabledMenuItem;
     private SettingsWindow? settingsWindow;
+    private ClipboardHistoryWindow? clipboardHistoryWindow;
+    private AboutWindow? aboutWindow;
     private IntPtr replacementTargetWindow;
     private bool isDisposed;
     private bool isEnabled = true;
+    private bool isPresentingClipboardSuggestion;
+    private bool wasMouseDown;
 
     public AppController()
     {
+        completionWindow = new CompletionWindow(languageStore);
+        clipboardMonitor = new ClipboardMonitor(clipboardHistoryStore);
+
         store.Changed += (_, _) => engine.UpdateSnippets(store.Snippets);
         engine.UpdateSnippets(store.Snippets);
+
+        languageStore.Changed += (_, _) => RebuildTrayMenu();
+        clipboardMonitor.RecordAdded += OnClipboardRecordAdded;
+        textReplacer.ClipboardWriteRequested += clipboardMonitor.IgnoreNextCopy;
 
         keyboardMonitor.QueryChanged += OnQueryChanged;
         keyboardMonitor.TriggerCompleted += OnTriggerCompleted;
@@ -34,20 +52,24 @@ internal sealed class AppController : IDisposable
         keyboardMonitor.SelectionConfirmed += OnSelectionConfirmed;
 
         completionWindow.SnippetConfirmed += snippet => ConfirmSnippet(snippet, keyboardMonitor.CurrentBufferLength, replacementTargetWindow);
+
+        outsideClickTimer.Interval = TimeSpan.FromMilliseconds(50);
+        outsideClickTimer.Tick += (_, _) => WatchForOutsideCompletionClick();
     }
 
     public void Start()
     {
         SetupTrayIcon();
         keyboardMonitor.Start();
+        clipboardMonitor.Start();
+        outsideClickTimer.Start();
+
         if (!keyboardMonitor.IsRunning)
         {
-            notifyIcon?.ShowBalloonTip(
-                3000,
-                "SnipKey",
-                "Keyboard monitoring could not start. Try running SnipKey again or checking Windows security settings.",
-                Forms.ToolTipIcon.Warning);
+            notifyIcon?.ShowBalloonTip(3000, "SnipKey", languageStore.Text(L10nKey.TrayKeyboardWarning), Forms.ToolTipIcon.Warning);
         }
+
+        ShowOnboardingIfNeeded();
     }
 
     public void Dispose()
@@ -58,76 +80,225 @@ internal sealed class AppController : IDisposable
         }
 
         isDisposed = true;
+        outsideClickTimer.Stop();
+        clipboardMonitor.Dispose();
         keyboardMonitor.Dispose();
         completionWindow.Close();
         settingsWindow?.Close();
+        clipboardHistoryWindow?.Close();
+        aboutWindow?.Close();
         notifyIcon?.Dispose();
+        trayIcon.Dispose();
     }
 
     private void SetupTrayIcon()
     {
-        enabledMenuItem = new Forms.ToolStripMenuItem("Enabled")
+        notifyIcon = new Forms.NotifyIcon
         {
-            Checked = true,
+            Icon = trayIcon,
+            Text = "SnipKey",
+            Visible = true
+        };
+        notifyIcon.DoubleClick += (_, _) => ShowSettings();
+        RebuildTrayMenu();
+    }
+
+    private void RebuildTrayMenu()
+    {
+        if (notifyIcon is null)
+        {
+            return;
+        }
+
+        var oldMenu = notifyIcon.ContextMenuStrip;
+        var contextMenu = new Forms.ContextMenuStrip();
+
+        enabledMenuItem = new Forms.ToolStripMenuItem(languageStore.Text(L10nKey.MenuEnable))
+        {
+            Checked = isEnabled,
             CheckOnClick = true
         };
         enabledMenuItem.CheckedChanged += (_, _) => SetEnabled(enabledMenuItem.Checked);
 
-        var settingsItem = new Forms.ToolStripMenuItem("Settings...", image: null, onClick: (_, _) => ShowSettings());
-        var reloadItem = new Forms.ToolStripMenuItem("Reload Keys", image: null, onClick: (_, _) => ReloadStore());
-        var quitItem = new Forms.ToolStripMenuItem("Quit SnipKey", image: null, onClick: (_, _) => System.Windows.Application.Current.Shutdown());
-
-        var contextMenu = new Forms.ContextMenuStrip();
         contextMenu.Items.Add(enabledMenuItem);
         contextMenu.Items.Add(new Forms.ToolStripSeparator());
-        contextMenu.Items.Add(settingsItem);
-        contextMenu.Items.Add(reloadItem);
+        contextMenu.Items.Add(new Forms.ToolStripMenuItem(languageStore.Text(L10nKey.MenuKeyboardDiagnosticsEllipsis), image: null, onClick: (_, _) => ShowKeyboardDiagnostics()));
+        contextMenu.Items.Add(new Forms.ToolStripMenuItem(languageStore.Text(L10nKey.MenuSettingsEllipsis), image: null, onClick: (_, _) => ShowSettings()));
+        contextMenu.Items.Add(new Forms.ToolStripMenuItem(languageStore.Text(L10nKey.MenuClipboardHistoryEllipsis), image: null, onClick: (_, _) => ShowClipboardHistory()));
+        contextMenu.Items.Add(new Forms.ToolStripMenuItem(languageStore.Text(L10nKey.MenuReloadKeys), image: null, onClick: (_, _) => ReloadStore()));
+        contextMenu.Items.Add(new Forms.ToolStripMenuItem(languageStore.Text(L10nKey.MenuAboutEllipsis), image: null, onClick: (_, _) => ShowAbout()));
         contextMenu.Items.Add(new Forms.ToolStripSeparator());
-        contextMenu.Items.Add(quitItem);
+        contextMenu.Items.Add(new Forms.ToolStripMenuItem(languageStore.Text(L10nKey.MenuQuitSnipKey), image: null, onClick: (_, _) => System.Windows.Application.Current.Shutdown()));
 
-        notifyIcon = new Forms.NotifyIcon
-        {
-            Icon = SystemIcons.Application,
-            Text = "SnipKey",
-            ContextMenuStrip = contextMenu,
-            Visible = true
-        };
-        notifyIcon.DoubleClick += (_, _) => ShowSettings();
+        notifyIcon.ContextMenuStrip = contextMenu;
+        oldMenu?.Dispose();
     }
 
     private void SetEnabled(bool enabled)
     {
+        if (isEnabled == enabled)
+        {
+            return;
+        }
+
         isEnabled = enabled;
         completionWindow.HidePopup();
 
         if (enabled)
         {
             keyboardMonitor.Start();
+            clipboardMonitor.Start();
         }
         else
         {
             keyboardMonitor.Stop();
+            clipboardMonitor.Stop();
         }
     }
 
     private void ReloadStore()
     {
         store.Load();
-        notifyIcon?.ShowBalloonTip(1500, "SnipKey", "Keys reloaded.", Forms.ToolTipIcon.Info);
+        notifyIcon?.ShowBalloonTip(1500, "SnipKey", languageStore.Text(L10nKey.TrayKeysReloaded), Forms.ToolTipIcon.Info);
     }
 
-    private void ShowSettings()
+    private void ShowSettings(Guid? selectingSnippetId = null, bool showGuide = false)
     {
-        if (settingsWindow is { IsVisible: true })
+        if (settingsWindow is not { IsVisible: true })
         {
-            settingsWindow.Activate();
+            settingsWindow = new SettingsWindow(store, clipboardHistoryStore, languageStore, ShowClipboardHistory, ShowAbout);
+            settingsWindow.Closed += (_, _) => settingsWindow = null;
+            settingsWindow.Show();
+        }
+
+        if (selectingSnippetId is not null)
+        {
+            settingsWindow.SelectSnippet(selectingSnippetId.Value);
+        }
+
+        settingsWindow.Activate();
+
+        if (showGuide)
+        {
+            settingsWindow.ShowGuide();
+        }
+    }
+
+    private void ShowClipboardHistory()
+    {
+        if (clipboardHistoryWindow is { IsVisible: true })
+        {
+            clipboardHistoryWindow.Activate();
             return;
         }
 
-        settingsWindow = new SettingsWindow(store);
-        settingsWindow.Closed += (_, _) => settingsWindow = null;
-        settingsWindow.Show();
-        settingsWindow.Activate();
+        clipboardHistoryWindow = new ClipboardHistoryWindow(clipboardHistoryStore, languageStore, CreateSnippetFromClipboardRecord);
+        clipboardHistoryWindow.Closed += (_, _) => clipboardHistoryWindow = null;
+        clipboardHistoryWindow.Show();
+        clipboardHistoryWindow.Activate();
+    }
+
+    private void ShowAbout()
+    {
+        if (aboutWindow is { IsVisible: true })
+        {
+            aboutWindow.Activate();
+            return;
+        }
+
+        aboutWindow = new AboutWindow(languageStore);
+        aboutWindow.Closed += (_, _) => aboutWindow = null;
+        aboutWindow.Show();
+        aboutWindow.Activate();
+    }
+
+    private void ShowKeyboardDiagnostics()
+    {
+        MessageBox.Show(
+            languageStore.Text(L10nKey.KeyboardDiagnosticsMessage),
+            languageStore.Text(L10nKey.KeyboardDiagnosticsTitle),
+            MessageBoxButton.OK,
+            MessageBoxImage.Information);
+    }
+
+    private void ShowOnboardingIfNeeded()
+    {
+        if (languageStore.HasShownOnboardingGuide)
+        {
+            return;
+        }
+
+        languageStore.MarkOnboardingGuideShown();
+        System.Windows.Application.Current.Dispatcher.BeginInvoke(() => ShowSettings(showGuide: true));
+    }
+
+    private void OnClipboardRecordAdded(ClipboardRecord record)
+    {
+        var existingSnippet = store.Snippets.FirstOrDefault(snippet => snippet.Replacement == record.Content);
+        if (existingSnippet is not null)
+        {
+            clipboardHistoryStore.MarkCreatedSnippet(record.Id, existingSnippet.Id);
+            return;
+        }
+
+        if (!clipboardHistoryStore.ShouldSuggestKey(record) || isPresentingClipboardSuggestion)
+        {
+            return;
+        }
+
+        clipboardHistoryStore.MarkPrompted(record.Id);
+        isPresentingClipboardSuggestion = true;
+        System.Windows.Application.Current.Dispatcher.BeginInvoke(() => PresentClipboardSuggestion(record));
+    }
+
+    private void PresentClipboardSuggestion(ClipboardRecord record)
+    {
+        try
+        {
+            var response = MessageBox.Show(
+                languageStore.Format(L10nKey.ClipboardSuggestionMessageFormat, ClipboardPreview(record.Content)),
+                languageStore.Format(L10nKey.ClipboardSuggestionTitleFormat, record.CopyCount),
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Information);
+
+            if (response == MessageBoxResult.Yes)
+            {
+                CreateSnippetFromClipboardRecord(record);
+            }
+        }
+        finally
+        {
+            isPresentingClipboardSuggestion = false;
+        }
+    }
+
+    private void CreateSnippetFromClipboardRecord(ClipboardRecord record)
+    {
+        var existingSnippet = store.Snippets.FirstOrDefault(snippet => snippet.Replacement == record.Content);
+        if (existingSnippet is not null)
+        {
+            clipboardHistoryStore.MarkCreatedSnippet(record.Id, existingSnippet.Id);
+            ShowSettings(existingSnippet.Id);
+            return;
+        }
+
+        var snippet = ClipboardSnippetFactory.MakeSnippet(record.Content, store.Snippets);
+        if (!store.AddSnippet(snippet))
+        {
+            return;
+        }
+
+        clipboardHistoryStore.MarkCreatedSnippet(record.Id, snippet.Id);
+        ShowSettings(snippet.Id);
+    }
+
+    private static string ClipboardPreview(string content)
+    {
+        var flattened = content
+            .Replace("\r", " ", StringComparison.Ordinal)
+            .Replace("\n", " ", StringComparison.Ordinal)
+            .Trim();
+        return flattened.Length > 120 ? flattened[..120] + "..." : flattened;
     }
 
     private void OnQueryChanged(string query)
@@ -201,7 +372,7 @@ internal sealed class AppController : IDisposable
         }
         catch (Exception exception)
         {
-            notifyIcon?.ShowBalloonTip(3000, "SnipKey", "Text replacement failed: " + exception.Message, Forms.ToolTipIcon.Error);
+            notifyIcon?.ShowBalloonTip(3000, "SnipKey", languageStore.Format(L10nKey.TrayReplacementFailedFormat, exception.Message), Forms.ToolTipIcon.Error);
         }
     }
 
@@ -212,5 +383,29 @@ internal sealed class AppController : IDisposable
         {
             replacementTargetWindow = foregroundWindow;
         }
+    }
+
+    private void WatchForOutsideCompletionClick()
+    {
+        var isMouseDown = NativeMethods.IsKeyDown(NativeMethods.VkLButton)
+            || NativeMethods.IsKeyDown(NativeMethods.VkRButton)
+            || NativeMethods.IsKeyDown(NativeMethods.VkMButton);
+
+        if (!completionWindow.IsPopupVisible)
+        {
+            wasMouseDown = isMouseDown;
+            return;
+        }
+
+        if (isMouseDown && !wasMouseDown && NativeMethods.GetCursorPos(out var point))
+        {
+            if (!completionWindow.ContainsScreenPoint(point.X, point.Y))
+            {
+                keyboardMonitor.Reset();
+                completionWindow.HidePopup();
+            }
+        }
+
+        wasMouseDown = isMouseDown;
     }
 }

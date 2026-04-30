@@ -19,11 +19,16 @@ namespace SnipKey.WinApp.UI;
 
 internal sealed class CompletionWindow : Window
 {
+    private readonly AppLanguageStore languageStore;
     private readonly WpfListBox listBox = new();
     private readonly TextBlock countText = new();
+    private readonly TextBlock titleText = new();
+    private readonly TextBlock instructionText = new();
 
-    public CompletionWindow()
+    public CompletionWindow(AppLanguageStore languageStore)
     {
+        this.languageStore = languageStore;
+
         WindowStyle = WindowStyle.None;
         ResizeMode = ResizeMode.NoResize;
         ShowInTaskbar = false;
@@ -63,11 +68,16 @@ internal sealed class CompletionWindow : Window
                 }
             }
         };
+
+        languageStore.Changed += (_, _) => UpdateLanguage();
+        UpdateLanguage();
     }
 
     public event Action<Snippet>? SnippetConfirmed;
 
     public Snippet? SelectedSnippet => listBox.SelectedItem is CompletionItem item ? item.Snippet : null;
+
+    public bool IsPopupVisible => IsVisible;
 
     public void ShowSnippets(IReadOnlyList<Snippet> snippets, WpfPoint screenPoint)
     {
@@ -94,6 +104,22 @@ internal sealed class CompletionWindow : Window
     {
         Hide();
         listBox.ItemsSource = null;
+    }
+
+    public bool ContainsScreenPoint(double screenX, double screenY)
+    {
+        if (!IsVisible)
+        {
+            return false;
+        }
+
+        return screenX >= Left && screenX <= Left + ActualWidth && screenY >= Top && screenY <= Top + ActualHeight;
+    }
+
+    public void UpdateLanguage()
+    {
+        titleText.Text = languageStore.Text(L10nKey.CompletionHeaderTitle);
+        instructionText.Text = languageStore.Text(L10nKey.CompletionHeaderInstruction);
     }
 
     public void MoveSelectionUp()
@@ -150,20 +176,15 @@ internal sealed class CompletionWindow : Window
         {
             Orientation = WpfOrientation.Vertical
         };
-        titleStack.Children.Add(new TextBlock
-        {
-            Text = "SnipKey",
-            FontSize = 14,
-            FontWeight = FontWeights.SemiBold,
-            Foreground = UiTheme.TextPrimaryBrush
-        });
-        titleStack.Children.Add(new TextBlock
-        {
-            Text = "Matches",
-            FontSize = 12,
-            Margin = new Thickness(0, 2, 0, 0),
-            Foreground = UiTheme.TextSecondaryBrush
-        });
+        titleText.FontSize = 14;
+        titleText.FontWeight = FontWeights.SemiBold;
+        titleText.Foreground = UiTheme.TextPrimaryBrush;
+        titleStack.Children.Add(titleText);
+
+        instructionText.FontSize = 12;
+        instructionText.Margin = new Thickness(0, 2, 0, 0);
+        instructionText.Foreground = UiTheme.TextSecondaryBrush;
+        titleStack.Children.Add(instructionText);
         layout.Children.Add(titleStack);
 
         countText.FontSize = 13;

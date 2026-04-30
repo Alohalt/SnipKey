@@ -8,8 +8,12 @@ internal static class NativeMethods
     internal const int WhKeyboardLl = 13;
     internal const int WmKeyDown = 0x0100;
     internal const int WmSysKeyDown = 0x0104;
+    internal const int WmClipboardUpdate = 0x031D;
     internal const int LlkhfInjected = 0x00000010;
 
+    internal const int VkLButton = 0x01;
+    internal const int VkRButton = 0x02;
+    internal const int VkMButton = 0x04;
     internal const int VkBack = 0x08;
     internal const int VkTab = 0x09;
     internal const int VkReturn = 0x0D;
@@ -102,6 +106,21 @@ internal static class NativeMethods
 
     [DllImport("user32.dll", SetLastError = true)]
     internal static extern int SetWindowLong(IntPtr windowHandle, int index, int newLong);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static extern bool AddClipboardFormatListener(IntPtr windowHandle);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static extern bool RemoveClipboardFormatListener(IntPtr windowHandle);
+
+    [DllImport("user32.dll")]
+    internal static extern uint GetClipboardSequenceNumber();
+
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static extern bool GetCursorPos(out NativePoint point);
 
     internal static bool IsKeyDown(int virtualKey)
     {
